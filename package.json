@@ -6,21 +6,54 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:load": "bash tests/load/run.sh",
+    "security:audit": "npm audit --omit=dev --audit-level=high",
+    "test:all": "npm run typecheck && npm run lint && npm run test:coverage"
   },
   "dependencies": {
+    "@auth/core": "^0.41.0",
+    "@auth/drizzle-adapter": "^1.11.1",
+    "@upstash/qstash": "^2.10.1",
+    "@upstash/redis": "^1.37.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.8.0",
     "next": "16.2.3",
+    "next-auth": "^5.0.0-beta.30",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "stripe": "^22.0.1",
+    "tailwind-merge": "^3.5.0",
+    "twilio": "^5.13.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.4",
+    "@faker-js/faker": "^10.4.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.4",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "msw": "^2.13.4",
+    "supertest": "^7.2.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }

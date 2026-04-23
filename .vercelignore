@@ -1,0 +1,14 @@
+ENV INFO.rtf
+ENV INFO.txt
+*.rtf
+.env*
+node_modules
+.next
+tests
+scripts
+*.md
+AGENTS.md
+ARCHITECTURE_PLAN.md
+CLAUDE.md
+README.md
+.DS_Store
