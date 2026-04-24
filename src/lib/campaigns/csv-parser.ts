@@ -70,6 +70,7 @@ export interface ParsedLead {
   company?: string;
   notes?: string;
   timezone: string;
+  segment?: string;
 }
 
 const HEADER_MAP: Record<string, string> = {
@@ -81,6 +82,8 @@ const HEADER_MAP: Record<string, string> = {
   "company": "company", "business": "company", "organization": "company", "org": "company",
   "company_name": "company", "companyname": "company",
   "notes": "notes", "note": "notes", "comments": "notes", "comment": "notes", "description": "notes",
+  "segment": "segment", "segments": "segment", "tag": "segment", "tags": "segment",
+  "list": "segment", "group": "segment", "category": "segment", "type": "segment",
 };
 
 export function parseCSV(csvText: string): { leads: ParsedLead[]; errors: string[] } {
@@ -135,10 +138,18 @@ export function parseCSV(csvText: string): { leads: ParsedLead[]; errors: string
       company: row.company || undefined,
       notes: row.notes || undefined,
       timezone: detectTimezone(normalizedPhone),
+      segment: normalizeSegment(row.segment),
     });
   }
 
   return { leads, errors };
+}
+
+export function normalizeSegment(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return undefined;
+  return trimmed.replace(/\s+/g, "-").slice(0, 64);
 }
 
 function parseCSVLine(line: string): string[] {

@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!org?.openaiProjectId) {
+    const projectId =
+      org?.openaiProjectId || process.env.OPENAI_SIP_PROJECT_ID || null;
+
+    if (!projectId) {
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -135,7 +138,7 @@ export async function POST(req: NextRequest) {
         .where(eq(leads.id, lead.id));
     }
 
-    const sipUri = buildSipUri(org.openaiProjectId, {
+    const sipUri = buildSipUri(projectId, {
       "X-SmartLine-OrgId": orgId,
       "X-SmartLine-AgentId": agentId,
       "X-SmartLine-ConversationId": conversation.id,

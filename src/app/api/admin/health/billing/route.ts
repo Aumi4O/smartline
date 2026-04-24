@@ -41,6 +41,9 @@ export async function GET() {
       STRIPE_PRO_PRICE_ID: !!process.env.STRIPE_PRO_PRICE_ID,
       STRIPE_PRO_PRODUCT_ID: !!process.env.STRIPE_PRO_PRODUCT_ID,
       OPENAI_WEBHOOK_SECRET: !!process.env.OPENAI_WEBHOOK_SECRET,
+      OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+      OPENAI_SIP_PROJECT_ID: !!process.env.OPENAI_SIP_PROJECT_ID,
+      OPENAI_ADMIN_KEY: !!process.env.OPENAI_ADMIN_KEY,
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || null,
     },
     stripe: {

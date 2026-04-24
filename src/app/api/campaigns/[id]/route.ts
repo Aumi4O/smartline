@@ -3,8 +3,9 @@ import { requireOrg } from "@/lib/org";
 import { db } from "@/lib/db";
 import { campaigns, leads } from "@/lib/db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
-import { processCampaignBatch, updateCampaignProgress } from "@/lib/campaigns/campaign-engine";
+import { processCampaignBatch } from "@/lib/campaigns/campaign-engine";
 import { logAuditEvent } from "@/lib/compliance/audit";
+import { parseSchedule } from "@/lib/campaigns/schedule";
 
 export async function GET(
   _req: NextRequest,
@@ -106,6 +107,10 @@ export async function PATCH(
     if (body.outboundPrompt !== undefined) updates.outboundPrompt = body.outboundPrompt;
     if (body.maxCallsPerHour) updates.maxCallsPerHour = body.maxCallsPerHour;
     if (body.voicemailAction) updates.voicemailAction = body.voicemailAction;
+    if (body.voicemailMessage !== undefined) updates.voicemailMessage = body.voicemailMessage;
+    if (body.schedule !== undefined) {
+      updates.schedule = parseSchedule(body.schedule);
+    }
 
     await db.update(campaigns).set(updates).where(eq(campaigns.id, id));
     return NextResponse.json({ updated: true });

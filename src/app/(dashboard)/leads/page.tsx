@@ -17,6 +17,7 @@ interface Lead {
   callAttempts: number;
   consentGranted: boolean;
   createdAt: string;
+  customFields?: { segment?: string } | null;
 }
 
 interface Stats {
@@ -26,27 +27,39 @@ interface Stats {
   interestedCount: number;
 }
 
+interface Segment {
+  name: string;
+  count: number;
+}
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, newCount: 0, calledCount: 0, interestedCount: 0 });
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [segmentFilter, setSegmentFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [segmentOverride, setSegmentOverride] = useState("");
   const [filter, setFilter] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchLeads = useCallback(async () => {
     try {
-      const res = await fetch("/api/leads");
+      const qs = segmentFilter
+        ? `?segment=${encodeURIComponent(segmentFilter)}`
+        : "";
+      const res = await fetch(`/api/leads${qs}`);
       if (res.ok) {
         const data = await res.json();
         setLeads(data.leads || []);
         setStats(data.stats || { total: 0, newCount: 0, calledCount: 0, interestedCount: 0 });
+        setSegments(data.segments || []);
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [segmentFilter]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -57,7 +70,10 @@ export default function LeadsPage() {
     setImportResult(null);
     try {
       const text = await file.text();
-      const res = await fetch("/api/leads", {
+      const qs = segmentOverride
+        ? `?segment=${encodeURIComponent(segmentOverride)}`
+        : "";
+      const res = await fetch(`/api/leads${qs}`, {
         method: "POST",
         headers: { "Content-Type": "text/csv" },
         body: text,
@@ -97,7 +113,13 @@ export default function LeadsPage() {
           <h1 className="text-2xl font-semibold text-black">Leads</h1>
           <p className="mt-1 text-gray-500">Upload and manage your contact lists for outbound campaigns.</p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Tag this upload (optional)"
+            value={segmentOverride}
+            onChange={(e) => setSegmentOverride(e.target.value)}
+            className="w-56"
+          />
           <input ref={fileRef} type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
           <Button onClick={() => fileRef.current?.click()} disabled={importing}>
             {importing ? "Importing..." : "Upload CSV"}
@@ -123,10 +145,49 @@ export default function LeadsPage() {
       <Card className="mb-6">
         <CardContent className="py-3">
           <p className="text-xs text-gray-400">
-            CSV format: <code className="text-black">first_name, last_name, phone, email, company, notes</code> — only phone is required. Auto-detects timezone from area code.
+            CSV format:{" "}
+            <code className="text-black">
+              first_name, last_name, phone, email, company, notes, segment
+            </code>{" "}
+            — only phone is required. Add a{" "}
+            <code className="text-black">segment</code> /{" "}
+            <code className="text-black">tag</code> /{" "}
+            <code className="text-black">list</code> column (or type a tag
+            above) to split uploads into sub-groups for campaign targeting.
           </p>
         </CardContent>
       </Card>
+
+      {segments.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-gray-400">Filter by segment:</span>
+          <button
+            type="button"
+            onClick={() => setSegmentFilter("")}
+            className={`rounded-full border px-3 py-1 transition ${
+              segmentFilter === ""
+                ? "border-black bg-black text-white"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+            }`}
+          >
+            All ({stats.total})
+          </button>
+          {segments.map((s) => (
+            <button
+              key={s.name}
+              type="button"
+              onClick={() => setSegmentFilter(s.name)}
+              className={`rounded-full border px-3 py-1 transition ${
+                segmentFilter === s.name
+                  ? "border-black bg-black text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+              }`}
+            >
+              {s.name} ({s.count})
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Leads Table */}
       <Card>
@@ -150,20 +211,22 @@ export default function LeadsPage() {
             </p>
           ) : (
             <div className="space-y-1">
-              <div className="grid grid-cols-7 gap-3 border-b border-gray-200 pb-2 text-xs font-medium text-gray-400">
+              <div className="grid grid-cols-8 gap-3 border-b border-gray-200 pb-2 text-xs font-medium text-gray-400">
                 <span>Name</span>
                 <span>Phone</span>
                 <span>Company</span>
+                <span>Segment</span>
                 <span>Status</span>
                 <span>Outcome</span>
                 <span>Attempts</span>
                 <span></span>
               </div>
               {filtered.map((lead) => (
-                <div key={lead.id} className="grid grid-cols-7 gap-3 border-b border-gray-200 py-2.5 text-sm last:border-0">
+                <div key={lead.id} className="grid grid-cols-8 gap-3 border-b border-gray-200 py-2.5 text-sm last:border-0">
                   <span className="font-medium text-black">{[lead.firstName, lead.lastName].filter(Boolean).join(" ") || "—"}</span>
                   <span className="text-black">{lead.phone}</span>
                   <span className="text-gray-500">{lead.company || "—"}</span>
+                  <span className="text-gray-500">{lead.customFields?.segment || "—"}</span>
                   <span className="capitalize text-gray-500">{lead.status}</span>
                   <span className={`capitalize ${lead.outcome === "interested" ? "font-medium text-black" : "text-gray-400"}`}>
                     {lead.outcome || "—"}

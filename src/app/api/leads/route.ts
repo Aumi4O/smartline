@@ -3,7 +3,12 @@ import { requireOrg } from "@/lib/org";
 import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
-import { parseCSV, normalizePhone, detectTimezone } from "@/lib/campaigns/csv-parser";
+import {
+  parseCSV,
+  normalizePhone,
+  detectTimezone,
+  normalizeSegment,
+} from "@/lib/campaigns/csv-parser";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
@@ -12,11 +17,17 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const status = url.searchParams.get("status");
     const campaignId = url.searchParams.get("campaignId");
+    const segment = normalizeSegment(
+      url.searchParams.get("segment") ?? undefined
+    );
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "100"), 500);
 
     const conditions = [eq(leads.orgId, org.id)];
     if (status) conditions.push(eq(leads.status, status));
     if (campaignId) conditions.push(eq(leads.campaignId, campaignId));
+    if (segment) {
+      conditions.push(sql`${leads.customFields}->>'segment' = ${segment}`);
+    }
 
     const rows = await db.query.leads.findMany({
       where: and(...conditions),
@@ -34,7 +45,21 @@ export async function GET(req: NextRequest) {
       .from(leads)
       .where(eq(leads.orgId, org.id));
 
-    return NextResponse.json({ leads: rows, stats });
+    const segmentRows = await db
+      .select({
+        segment: sql<string>`${leads.customFields}->>'segment'`,
+        count: count(),
+      })
+      .from(leads)
+      .where(eq(leads.orgId, org.id))
+      .groupBy(sql`${leads.customFields}->>'segment'`);
+
+    const segments = segmentRows
+      .filter((r) => r.segment)
+      .map((r) => ({ name: r.segment, count: Number(r.count) }))
+      .sort((a, b) => b.count - a.count);
+
+    return NextResponse.json({ leads: rows, stats, segments });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -58,23 +83,33 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "No valid leads found", errors }, { status: 400 });
       }
 
-      const campaignId = new URL(req.url).searchParams.get("campaignId") || undefined;
+      const reqUrl = new URL(req.url);
+      const campaignId = reqUrl.searchParams.get("campaignId") || undefined;
+      // Optional override: ?segment=vip assigns all imported rows to that segment
+      // when the CSV itself didn't include a segment/tag column.
+      const segmentOverride = normalizeSegment(
+        reqUrl.searchParams.get("segment") ?? undefined
+      );
 
       const rows = await db
         .insert(leads)
         .values(
-          parsed.map((l) => ({
-            orgId: org.id,
-            campaignId: campaignId || undefined,
-            firstName: l.firstName,
-            lastName: l.lastName,
-            phone: l.phone,
-            email: l.email,
-            company: l.company,
-            notes: l.notes,
-            timezone: l.timezone,
-            consentGranted: true,
-          }))
+          parsed.map((l) => {
+            const segment = l.segment || segmentOverride;
+            return {
+              orgId: org.id,
+              campaignId: campaignId || undefined,
+              firstName: l.firstName,
+              lastName: l.lastName,
+              phone: l.phone,
+              email: l.email,
+              company: l.company,
+              notes: l.notes,
+              timezone: l.timezone,
+              consentGranted: true,
+              customFields: segment ? { segment } : {},
+            };
+          })
         )
         .onConflictDoNothing()
         .returning();
@@ -92,6 +127,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
+    const segment = normalizeSegment(body.segment);
+
     const [lead] = await db
       .insert(leads)
       .values({
@@ -105,6 +142,7 @@ export async function POST(req: NextRequest) {
         notes: body.notes,
         timezone: body.timezone || detectTimezone(phone),
         consentGranted: body.consentGranted ?? true,
+        customFields: segment ? { segment } : {},
       })
       .returning();
 

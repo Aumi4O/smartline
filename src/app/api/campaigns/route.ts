@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOrg } from "@/lib/org";
 import { db } from "@/lib/db";
 import { campaigns } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { parseSchedule, DEFAULT_SCHEDULE } from "@/lib/campaigns/schedule";
 
 export async function GET() {
   try {
@@ -41,6 +42,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and agent are required" }, { status: 400 });
     }
 
+    // Normalize the schedule (call window + segment filter) so the engine can
+    // trust the shape on read. parseSchedule fills in defaults for anything
+    // the client didn't send.
+    const schedule = body.schedule
+      ? parseSchedule(body.schedule)
+      : DEFAULT_SCHEDULE;
+
     const [campaign] = await db
       .insert(campaigns)
       .values({
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
         name: body.name,
         outboundPrompt: body.outboundPrompt || "",
         callFromNumberId: body.callFromNumberId || null,
-        schedule: body.schedule || { startTime: "09:00", endTime: "17:00", days: [1, 2, 3, 4, 5] },
+        schedule,
         maxConcurrent: body.maxConcurrent || 1,
         maxCallsPerHour: body.maxCallsPerHour || 30,
         voicemailAction: body.voicemailAction || "leave_message",

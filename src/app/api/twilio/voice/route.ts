@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
       where: eq(organizations.id, phoneRecord.orgId),
     });
 
+    // Per-tenant OpenAI project is nice for isolation, but not required for a
+    // working call. Fall back to a shared platform project if the tenant
+    // hasn't been provisioned yet (or if OPENAI_ADMIN_KEY isn't available).
     if (!org?.openaiProjectId) {
       try {
         await provisionOrg(phoneRecord.orgId);
@@ -59,13 +62,22 @@ export async function POST(req: NextRequest) {
           where: eq(organizations.id, phoneRecord.orgId),
         });
       } catch (err) {
-        console.error(`[twilio/voice] OpenAI auto-provision failed for ${phoneRecord.orgId}:`, err);
+        console.error(
+          `[twilio/voice] OpenAI auto-provision failed for ${phoneRecord.orgId}:`,
+          err
+        );
       }
     }
 
-    if (!org?.openaiProjectId) {
+    const projectId =
+      org?.openaiProjectId || process.env.OPENAI_SIP_PROJECT_ID || null;
+
+    if (!projectId) {
       return new NextResponse(
-        twiml("This agent is still being set up. Please try again in a minute. Goodbye.", true),
+        twiml(
+          "This agent is still being set up. Please try again in a minute. Goodbye.",
+          true
+        ),
         { headers: { "Content-Type": "text/xml" } }
       );
     }
@@ -81,7 +93,7 @@ export async function POST(req: NextRequest) {
     grantConsent(phoneRecord.orgId, from, "recording", "call_disclosure").catch(() => {});
     logAuditEvent(phoneRecord.orgId, "call.inbound", "conversation", conversation.id, undefined, undefined, { from, callSid }).catch(() => {});
 
-    const sipUri = buildSipUri(org.openaiProjectId, {
+    const sipUri = buildSipUri(projectId, {
       "X-SmartLine-OrgId": phoneRecord.orgId,
       "X-SmartLine-AgentId": agent.id,
       "X-SmartLine-ConversationId": conversation.id,

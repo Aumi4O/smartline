@@ -2,8 +2,18 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+interface CampaignSchedule {
+  callWindow?: {
+    fallbackTimezone?: string;
+    daysOfWeek?: number[];
+    startHour?: number;
+    endHour?: number;
+  };
+  leadSegmentFilter?: string | null;
+}
 
 interface CampaignDetail {
   id: string;
@@ -14,6 +24,7 @@ interface CampaignDetail {
   voicemailAction: string;
   totalLeads: number;
   completedLeads: number;
+  schedule?: CampaignSchedule | null;
   agent?: { name: string };
   callFromNumber?: { phoneNumber: string };
 }
@@ -40,6 +51,7 @@ interface Lead {
   status: string;
   outcome: string | null;
   callAttempts: number;
+  customFields?: { segment?: string } | null;
 }
 
 export default function CampaignDetailPage() {
@@ -194,6 +206,16 @@ export default function CampaignDetailPage() {
         </div>
       )}
 
+      {/* Schedule & Segment */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Schedule &amp; targeting</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <ScheduleSummary schedule={campaign.schedule} />
+        </CardContent>
+      </Card>
+
       {/* Add Leads */}
       {(campaign.status === "draft" || campaign.status === "paused") && (
         <Card className="mb-6">
@@ -226,17 +248,19 @@ export default function CampaignDetailPage() {
             <p className="py-8 text-center text-sm text-gray-400">No leads in this campaign yet.</p>
           ) : (
             <div className="space-y-1">
-              <div className="grid grid-cols-5 gap-3 border-b border-gray-200 pb-2 text-xs font-medium text-gray-400">
+              <div className="grid grid-cols-6 gap-3 border-b border-gray-200 pb-2 text-xs font-medium text-gray-400">
                 <span>Name</span>
                 <span>Phone</span>
+                <span>Segment</span>
                 <span>Status</span>
                 <span>Outcome</span>
                 <span>Attempts</span>
               </div>
               {leads.map((lead) => (
-                <div key={lead.id} className="grid grid-cols-5 gap-3 border-b border-gray-200 py-2 text-sm last:border-0">
+                <div key={lead.id} className="grid grid-cols-6 gap-3 border-b border-gray-200 py-2 text-sm last:border-0">
                   <span className="font-medium text-black">{[lead.firstName, lead.lastName].filter(Boolean).join(" ") || "—"}</span>
                   <span className="text-black">{lead.phone}</span>
+                  <span className="text-gray-500">{lead.customFields?.segment || "—"}</span>
                   <span className="capitalize text-gray-500">{lead.status}</span>
                   <span className={`capitalize ${lead.outcome === "interested" ? "font-medium text-black" : "text-gray-400"}`}>
                     {lead.outcome || "—"}
@@ -258,5 +282,60 @@ function StatBox({ label, value, highlight }: { label: string; value: number; hi
       <p className="text-xs text-gray-400">{label}</p>
       <p className={`mt-0.5 text-xl font-semibold ${highlight ? "text-black" : "text-black"}`}>{value}</p>
     </div>
+  );
+}
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatHour(h: number): string {
+  if (h === 0 || h === 24) return "12:00 AM";
+  if (h === 12) return "12:00 PM";
+  if (h > 12) return `${h - 12}:00 PM`;
+  return `${h}:00 AM`;
+}
+
+function ScheduleSummary({
+  schedule,
+}: {
+  schedule?: CampaignSchedule | null;
+}) {
+  const cw = schedule?.callWindow || {};
+  const days = cw.daysOfWeek ?? [1, 2, 3, 4, 5];
+  const startHour = cw.startHour ?? 9;
+  const endHour = cw.endHour ?? 20;
+  const tz = cw.fallbackTimezone ?? "America/New_York";
+  const segment = schedule?.leadSegmentFilter;
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-500">Lead segment</span>
+        <span className="font-medium text-black">
+          {segment ? segment : "All leads"}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-500">Call window</span>
+        <span className="font-medium text-black">
+          {formatHour(startHour)} – {formatHour(endHour)} local
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-500">Days</span>
+        <span className="font-medium text-black">
+          {days.length === 7
+            ? "Every day"
+            : days
+                .slice()
+                .sort()
+                .map((d) => DAY_LABELS[d])
+                .join(", ")}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-500">Fallback timezone</span>
+        <span className="font-mono text-xs text-black">{tz}</span>
+      </div>
+    </>
   );
 }

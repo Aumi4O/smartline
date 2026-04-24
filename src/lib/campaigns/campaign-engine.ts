@@ -1,19 +1,26 @@
 import { db } from "@/lib/db";
-import { campaigns, leads, phoneNumbers, organizations, agents } from "@/lib/db/schema";
-import { eq, and, or, sql, lte } from "drizzle-orm";
+import { campaigns, leads, phoneNumbers, organizations } from "@/lib/db/schema";
+import { eq, and, or, sql } from "drizzle-orm";
 import { runAllChecks } from "./tcpa";
 import { getSubAccountClient } from "@/lib/twilio";
+import { parseSchedule, isInsideCallWindow } from "./schedule";
 
 export async function getNextLeadsToCall(
   campaignId: string,
-  limit: number
-): Promise<typeof leads.$inferSelect[]> {
+  limit: number,
+  opts?: { segment?: string | null }
+): Promise<(typeof leads.$inferSelect)[]> {
+  const conditions = [
+    eq(leads.campaignId, campaignId),
+    or(eq(leads.status, "new"), eq(leads.status, "queued")),
+    eq(leads.doNotCall, false),
+  ];
+  if (opts?.segment) {
+    conditions.push(sql`${leads.customFields}->>'segment' = ${opts.segment}`);
+  }
+
   return db.query.leads.findMany({
-    where: and(
-      eq(leads.campaignId, campaignId),
-      or(eq(leads.status, "new"), eq(leads.status, "queued")),
-      eq(leads.doNotCall, false)
-    ),
+    where: and(...conditions),
     orderBy: (l, { asc }) => [asc(l.createdAt)],
     limit,
   });
@@ -34,6 +41,14 @@ export async function initiateOutboundCall(
     where: eq(leads.id, leadId),
   });
   if (!lead) return { success: false, error: "Lead not found" };
+
+  // Campaign-level call window (quiet hours / allowed weekdays).
+  const schedule = parseSchedule(campaign.schedule);
+  const leadTz = lead.timezone || schedule.callWindow.fallbackTimezone;
+  const windowCheck = isInsideCallWindow(schedule.callWindow, leadTz);
+  if (!windowCheck.allowed) {
+    return { success: false, error: `Window blocked: ${windowCheck.reason}` };
+  }
 
   const tcpaCheck = runAllChecks(lead, campaign.retryDelayMinutes ?? 60);
   if (!tcpaCheck.allowed) {
@@ -116,10 +131,28 @@ export async function processCampaignBatch(campaignId: string): Promise<number> 
   });
   if (!campaign || campaign.status !== "active") return 0;
 
-  const schedule = (campaign.schedule as Record<string, unknown>) || {};
-  const maxConcurrent = campaign.maxConcurrent ?? 1;
+  const schedule = parseSchedule(campaign.schedule);
+  const maxConcurrent = Math.max(1, Math.min(campaign.maxConcurrent ?? 1, 10));
 
-  const eligibleLeads = await getNextLeadsToCall(campaignId, maxConcurrent);
+  // Fast-fail: if the campaign's fallback-timezone clock is outside the call
+  // window today, skip the batch entirely. Per-lead timezone is still checked
+  // inside initiateOutboundCall before each call — we just avoid a DB fetch
+  // if there's no chance today.
+  const fallbackWindow = isInsideCallWindow(
+    schedule.callWindow,
+    schedule.callWindow.fallbackTimezone
+  );
+  if (!fallbackWindow.allowed) {
+    console.info(
+      `Campaign ${campaignId}: batch skipped — ${fallbackWindow.reason}`
+    );
+    return 0;
+  }
+
+  const eligibleLeads = await getNextLeadsToCall(campaignId, maxConcurrent, {
+    segment: schedule.leadSegmentFilter,
+  });
+
   let initiated = 0;
 
   for (const lead of eligibleLeads) {
@@ -127,7 +160,9 @@ export async function processCampaignBatch(campaignId: string): Promise<number> 
     if (result.success) {
       initiated++;
     } else {
-      console.warn(`Campaign ${campaignId}: skipped lead ${lead.id} — ${result.error}`);
+      console.warn(
+        `Campaign ${campaignId}: skipped lead ${lead.id} — ${result.error}`
+      );
     }
   }
 
