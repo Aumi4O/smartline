@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { creditBalances, creditTransactions } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
+import { FREE_CALL_MINUTES_MONTHLY } from "@/lib/pricing";
 
 export async function getBalance(orgId: string): Promise<number> {
   const row = await db.query.creditBalances.findFirst({
@@ -68,6 +69,36 @@ export async function deductCredits(
   });
 
   return { success: true, balance: updated.balanceCents };
+}
+
+export async function getFreeMinutesStatus(orgId: string): Promise<{
+  allowance: number;
+  usedSec: number;
+  remainingSec: number;
+}> {
+  const now = new Date();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)
+  );
+  const rows = await db
+    .select({
+      total: sql<number>`COALESCE(SUM( (${creditTransactions.metadata}->>'durationSec')::int ), 0)`,
+    })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.orgId, orgId),
+        eq(creditTransactions.type, "usage"),
+        gte(creditTransactions.createdAt, monthStart)
+      )
+    );
+  const usedSec = Number(rows[0]?.total ?? 0);
+  const capSec = FREE_CALL_MINUTES_MONTHLY * 60;
+  return {
+    allowance: FREE_CALL_MINUTES_MONTHLY,
+    usedSec,
+    remainingSec: Math.max(0, capSec - usedSec),
+  };
 }
 
 export async function getTransactionHistory(orgId: string, limit = 20) {

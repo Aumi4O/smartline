@@ -56,6 +56,20 @@ export const USAGE_RATES = {
   extra_storage_per_gb_cents: 500,
 } as const;
 
+/**
+ * Each org gets this many free call-minutes per calendar month.
+ * Keeps test calls from scaring away new customers.
+ */
+export const FREE_CALL_MINUTES_MONTHLY = 30;
+
+/** Combined voice + inbound phone rate in cents/minute (for display). */
+export const INBOUND_CALL_RATE_CENTS_PER_MIN =
+  USAGE_RATES.voice_per_min_cents + USAGE_RATES.twilio_inbound_per_min_cents;
+
+/** Combined voice + outbound phone rate in cents/minute (for display). */
+export const OUTBOUND_CALL_RATE_CENTS_PER_MIN =
+  USAGE_RATES.voice_per_min_cents + USAGE_RATES.twilio_outbound_per_min_cents;
+
 export function centsToUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }

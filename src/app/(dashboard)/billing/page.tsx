@@ -18,6 +18,15 @@ interface BillingData {
   balanceCents: number;
   plan: string;
   planStatus: string;
+  freeMinutes?: {
+    allowance: number;
+    usedSec: number;
+    remainingSec: number;
+  };
+  rates?: {
+    inboundCentsPerMin: number;
+    outboundCentsPerMin: number;
+  };
   transactions: Transaction[];
 }
 
@@ -145,6 +154,46 @@ export default function BillingPage() {
                   </Button>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Free monthly minutes — only show after activation */}
+        {!isInactive && data?.freeMinutes && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Free Call Minutes</CardTitle>
+              <CardDescription>
+                {data.freeMinutes.allowance} minutes included every calendar month — perfect for testing your agent.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-2 text-4xl font-semibold text-black">
+                {Math.floor(data.freeMinutes.remainingSec / 60)}
+                <span className="ml-2 text-lg font-normal text-gray-500">
+                  / {data.freeMinutes.allowance} min remaining
+                </span>
+              </p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className="h-full bg-black"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (data.freeMinutes.usedSec /
+                        Math.max(1, data.freeMinutes.allowance * 60)) *
+                        100
+                    ).toFixed(1)}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                Free minutes apply first. After you use them, calls bill at{" "}
+                <span className="font-mono text-gray-700">
+                  ${((data.rates?.inboundCentsPerMin ?? 8.6) / 100).toFixed(3)}
+                </span>{" "}
+                / minute from your credit balance.
+              </p>
             </CardContent>
           </Card>
         )}
