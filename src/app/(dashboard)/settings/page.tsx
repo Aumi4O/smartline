@@ -13,6 +13,8 @@ interface Webhook {
   createdAt: string;
 }
 
+type DisclosureMode = "always" | "first_call" | "never";
+
 export default function SettingsPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [newUrl, setNewUrl] = useState("");
@@ -21,6 +23,9 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState("");
   const [orgSlug, setOrgSlug] = useState("");
   const [retentionDays, setRetentionDays] = useState(90);
+  const [disclosureMode, setDisclosureMode] = useState<DisclosureMode>("first_call");
+  const [disclosureSaving, setDisclosureSaving] = useState(false);
+  const [disclosureSaved, setDisclosureSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -32,6 +37,13 @@ export default function SettingsPage() {
         setOrgName(data.name || "");
         setOrgSlug(data.slug || "");
         setRetentionDays(data.dataRetentionDays || 90);
+        if (
+          data.recordingDisclosureMode === "always" ||
+          data.recordingDisclosureMode === "first_call" ||
+          data.recordingDisclosureMode === "never"
+        ) {
+          setDisclosureMode(data.recordingDisclosureMode);
+        }
       }
     } catch {}
   }, []);
@@ -89,6 +101,29 @@ export default function SettingsPage() {
   async function handleDeleteWebhook(id: string) {
     await fetch(`/api/webhooks?id=${id}`, { method: "DELETE" });
     fetchWebhooks();
+  }
+
+  async function handleChangeDisclosureMode(next: DisclosureMode) {
+    if (next === disclosureMode) return;
+    if (next === "never") {
+      const ok = confirm(
+        "Turning the recording disclosure OFF means no \"this call may be recorded\" announcement will play.\n\nThis is only legal in one-party consent states. You take full responsibility for compliance (TCPA, CPRA, GDPR, and any state two-party consent laws).\n\nContinue?"
+      );
+      if (!ok) return;
+    }
+    setDisclosureMode(next);
+    setDisclosureSaving(true);
+    setDisclosureSaved(false);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordingDisclosureMode: next }),
+      });
+      if (res.ok) setDisclosureSaved(true);
+    } finally {
+      setDisclosureSaving(false);
+    }
   }
 
   return (
@@ -181,6 +216,98 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Recording disclosure */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Call recording disclosure</CardTitle>
+            <CardDescription>
+              Controls the &ldquo;This call may be recorded&rdquo; announcement that plays
+              before the agent picks up.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {(
+                [
+                  {
+                    id: "first_call" as const,
+                    title: "First call only (recommended)",
+                    desc: "Announced the first time a caller phones this number. Returning callers skip straight to the agent.",
+                  },
+                  {
+                    id: "always" as const,
+                    title: "Every call",
+                    desc: "Announce on every inbound and outbound call. Safest for two-party consent states (CA, FL, IL, MA, MD, MT, NH, NV, PA, WA).",
+                  },
+                  {
+                    id: "never" as const,
+                    title: "Never (off)",
+                    desc: "Caller goes straight to the agent — no announcement. Only safe in one-party consent states. You accept full compliance responsibility.",
+                  },
+                ]
+              ).map((opt) => {
+                const selected = disclosureMode === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleChangeDisclosureMode(opt.id)}
+                    disabled={disclosureSaving}
+                    className={`w-full rounded-lg border p-4 text-left transition-colors ${
+                      selected
+                        ? "border-black bg-black text-white"
+                        : "border-gray-200 bg-white text-black hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                          selected ? "border-white" : "border-gray-400"
+                        }`}
+                        aria-hidden
+                      >
+                        {selected && (
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium">{opt.title}</p>
+                        <p
+                          className={`mt-0.5 text-xs ${
+                            selected ? "text-white/70" : "text-gray-500"
+                          }`}
+                        >
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {disclosureMode === "never" && (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                <p className="font-medium">Legal warning</p>
+                <p className="mt-0.5">
+                  Recording without an announcement is illegal in 11+ US states
+                  (two-party consent) and in most of the EU. Make sure you have
+                  prior written consent from every caller before turning this
+                  off.
+                </p>
+              </div>
+            )}
+
+            <p className="mt-3 text-xs text-gray-400">
+              {disclosureSaving
+                ? "Saving…"
+                : disclosureSaved
+                ? "Saved — new setting applies to the next call."
+                : "Takes effect immediately on the next call."}
+            </p>
           </CardContent>
         </Card>
 

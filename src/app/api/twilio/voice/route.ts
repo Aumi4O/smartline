@@ -3,7 +3,11 @@ import { db } from "@/lib/db";
 import { phoneNumbers, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAgentForCall, createCallRecord } from "@/lib/calls/call-handler";
-import { getRecordingDisclosure, grantConsent } from "@/lib/compliance/consent";
+import { getRecordingDisclosure } from "@/lib/compliance/consent";
+import {
+  shouldPlayDisclosure,
+  recordDisclosureConsent,
+} from "@/lib/compliance/disclosure-settings";
 import { logAuditEvent } from "@/lib/compliance/audit";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { buildSipUri, escapeXml } from "@/lib/sip";
@@ -90,8 +94,19 @@ export async function POST(req: NextRequest) {
       { callSid, calledNumber: cleanNumber, direction: "inbound" }
     );
 
-    grantConsent(phoneRecord.orgId, from, "recording", "call_disclosure").catch(() => {});
-    logAuditEvent(phoneRecord.orgId, "call.inbound", "conversation", conversation.id, undefined, undefined, { from, callSid }).catch(() => {});
+    const playDisclosure = await shouldPlayDisclosure(phoneRecord.orgId, from);
+    if (playDisclosure) {
+      recordDisclosureConsent(phoneRecord.orgId, from, "call_disclosure").catch(() => {});
+    }
+    logAuditEvent(
+      phoneRecord.orgId,
+      "call.inbound",
+      "conversation",
+      conversation.id,
+      undefined,
+      undefined,
+      { from, callSid, playedDisclosure: playDisclosure }
+    ).catch(() => {});
 
     const sipUri = buildSipUri(projectId, {
       "X-SmartLine-OrgId": phoneRecord.orgId,
@@ -100,18 +115,19 @@ export async function POST(req: NextRequest) {
       "X-SmartLine-Direction": "inbound",
     });
 
-    const disclosure = getRecordingDisclosure();
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host")}`;
     const fallbackAction = `${appUrl}/api/twilio/voice/fallback?conversationId=${encodeURIComponent(
       conversation.id
     )}`;
 
+    const disclosureSay = playDisclosure
+      ? `  <Say voice="Polly.Joanna">${getRecordingDisclosure()}</Say>\n  <Pause length="1"/>\n`
+      : "";
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">${disclosure}</Say>
-  <Pause length="1"/>
-  <Dial answerOnBridge="true" timeout="30" action="${escapeXml(fallbackAction)}" method="POST">
+${disclosureSay}  <Dial answerOnBridge="true" timeout="30" action="${escapeXml(fallbackAction)}" method="POST">
     <Sip>${escapeXml(sipUri)}</Sip>
   </Dial>
 </Response>`;

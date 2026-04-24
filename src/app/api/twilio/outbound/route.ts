@@ -4,6 +4,10 @@ import { leads, campaigns, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { createCallRecord } from "@/lib/calls/call-handler";
 import { getRecordingDisclosure } from "@/lib/compliance/consent";
+import {
+  shouldPlayDisclosure,
+  recordDisclosureConsent,
+} from "@/lib/compliance/disclosure-settings";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { buildSipUri, escapeXml } from "@/lib/sip";
 
@@ -147,13 +151,18 @@ export async function POST(req: NextRequest) {
       ...(campaignId ? { "X-SmartLine-CampaignId": campaignId } : {}),
     });
 
-    const disclosure = getRecordingDisclosure();
+    const playDisclosure = await shouldPlayDisclosure(orgId, to);
+    if (playDisclosure) {
+      recordDisclosureConsent(orgId, to, "outbound_disclosure").catch(() => {});
+    }
+
+    const disclosureSay = playDisclosure
+      ? `  <Say voice="Polly.Joanna">${getRecordingDisclosure()}</Say>\n  <Pause length="1"/>\n`
+      : "";
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">${disclosure}</Say>
-  <Pause length="1"/>
-  <Dial answerOnBridge="true" timeout="30">
+${disclosureSay}  <Dial answerOnBridge="true" timeout="30">
     <Sip>${escapeXml(sipUri)}</Sip>
   </Dial>
 </Response>`;
