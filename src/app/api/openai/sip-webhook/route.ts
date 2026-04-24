@@ -91,6 +91,48 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     if (!callId || !projectId) {
+      // #region DBG054c86 sip-webhook-payload-shape
+      try {
+        // Safe to log: event metadata + top-level keys only, no secrets.
+        // Helps us see OpenAI's actual envelope shape when our parser
+        // misses the call id / project id.
+        const topKeys = Object.keys(body || {});
+        const dataKeys = body?.data ? Object.keys(body.data) : [];
+        const dataCallKeys = body?.data?.call ? Object.keys(body.data.call) : [];
+        const callKeysFromRoot = body?.call ? Object.keys(body.call) : [];
+        const __dbg = {
+          sessionId: "054c86",
+          runId: "initial",
+          hypothesisId: "H12",
+          location: "src/app/api/openai/sip-webhook/route.ts:missing-fields",
+          message: "webhook body missing call_id/project_id — logging shape",
+          data: {
+            eventType,
+            topKeys,
+            dataKeys,
+            dataCallKeys,
+            callKeysFromRoot,
+            bodyLen: rawBody.length,
+            bodySnippet: rawBody.slice(0, 600),
+          },
+          timestamp: Date.now(),
+        };
+        console.log(
+          `[DBG054c86] sip-webhook.shape ${JSON.stringify(__dbg.data)}`
+        );
+        fetch(
+          "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "054c86",
+            },
+            body: JSON.stringify(__dbg),
+          }
+        ).catch(() => {});
+      } catch {}
+      // #endregion
       console.error("[sip-webhook] missing call_id or project_id");
       return NextResponse.json({ error: "Missing call info" }, { status: 400 });
     }
