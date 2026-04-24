@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { organizations, agents, phoneNumbers, conversations, leads, campaigns } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { buildCallConfig, createCallRecord } from "@/lib/calls/call-handler";
-import { readSipHeader } from "@/lib/sip";
+import { readSipHeader, extractSipUriUser } from "@/lib/sip";
 import { toE164BestEffort } from "@/lib/phone/e164";
 import crypto from "node:crypto";
 
@@ -74,21 +74,63 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    const callId = body.call?.id;
-    const projectId = body.call?.project_id;
-    const sipHeaders = body.call?.headers as Record<string, string | string[]> | undefined;
-    const sipFrom = readSipHeader(sipHeaders, "from") || body.call?.from;
-    const sipTo = readSipHeader(sipHeaders, "to") || body.call?.to;
+    // OpenAI's realtime.call.incoming payload shape (verified against
+    // production webhook delivery, 2026-04-24):
+    //   { id, object, created_at, type,
+    //     data: { call_id, sip_headers: [{name, value}, ...] } }
+    //
+    // Earlier drafts (and some internal OpenAI environments) used
+    // `body.call.{id,project_id,headers,from,to}`. We read both so the
+    // webhook doesn't break when OpenAI rolls out a shape change.
+    const dataBag = body?.data ?? body?.call ?? {};
+    const callId: string | undefined = dataBag.call_id ?? dataBag.id;
+    const sipHeaders:
+      | Array<{ name?: string; value?: string }>
+      | Record<string, string | string[]>
+      | undefined = dataBag.sip_headers ?? dataBag.headers;
+
+    const sipFrom = readSipHeader(sipHeaders, "from") || dataBag.from;
+    const sipTo = readSipHeader(sipHeaders, "to") || dataBag.to;
+
+    // Project id: OpenAI doesn't put it in a dedicated field in the new
+    // shape — it lives as the user-part of the SIP `To` URI. Fall back
+    // to the legacy explicit field if present.
+    const projectId: string | undefined =
+      dataBag.project_id || extractSipUriUser(sipTo) || undefined;
 
     // Trace every incoming INVITE so we can see the exact header shape OpenAI
     // is sending. Keeps diagnosis fast when a call doesn't connect.
+    const headerNames = Array.isArray(sipHeaders)
+      ? sipHeaders.map((h) => h?.name || "").filter(Boolean)
+      : sipHeaders
+        ? Object.keys(sipHeaders)
+        : [];
     try {
       console.log(
-        `[sip-webhook] incoming call=${callId} project=${projectId} from=${sipFrom || ""} to=${sipTo || ""} headerKeys=${
-          sipHeaders ? Object.keys(sipHeaders).join(",") : ""
-        }`
+        `[sip-webhook] incoming call=${callId} project=${projectId} from=${sipFrom || ""} to=${sipTo || ""} headerNames=${headerNames.join(",")}`
       );
     } catch {}
+
+    // #region DBG054c86 sip-webhook-parse-ok
+    try {
+      const __dbg = {
+        sessionId: "054c86",
+        runId: "post-fix",
+        hypothesisId: "H12",
+        location: "src/app/api/openai/sip-webhook/route.ts:parsed",
+        message: "parsed webhook envelope",
+        data: {
+          callId: callId || null,
+          projectId: projectId || null,
+          sipFromSnippet: typeof sipFrom === "string" ? sipFrom.slice(0, 120) : null,
+          sipToSnippet: typeof sipTo === "string" ? sipTo.slice(0, 120) : null,
+          headerNames,
+        },
+        timestamp: Date.now(),
+      };
+      console.log(`[DBG054c86] sip-webhook.parsed ${JSON.stringify(__dbg.data)}`);
+    } catch {}
+    // #endregion
 
     if (!callId || !projectId) {
       // #region DBG054c86 sip-webhook-payload-shape
