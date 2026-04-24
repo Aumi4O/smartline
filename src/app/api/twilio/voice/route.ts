@@ -108,19 +108,12 @@ export async function POST(req: NextRequest) {
       { from, callSid, playedDisclosure: playDisclosure }
     ).catch(() => {});
 
-    // DBG054c86 H7-test: dial a BARE SIP URI without custom X-SmartLine-*
-    // headers. If OpenAI now accepts the INVITE, it means the headers were
-    // triggering the 400. Tenant context will be resolved from the called
-    // number in the webhook, which already has that fallback wired up.
-    const useBareSipUri = true;
-    const sipUri = useBareSipUri
-      ? buildSipUri(projectId)
-      : buildSipUri(projectId, {
-          "X-SmartLine-OrgId": phoneRecord.orgId,
-          "X-SmartLine-AgentId": agent.id,
-          "X-SmartLine-ConversationId": conversation.id,
-          "X-SmartLine-Direction": "inbound",
-        });
+    const sipUri = buildSipUri(projectId, {
+      "X-SmartLine-OrgId": phoneRecord.orgId,
+      "X-SmartLine-AgentId": agent.id,
+      "X-SmartLine-ConversationId": conversation.id,
+      "X-SmartLine-Direction": "inbound",
+    });
 
     // #region DBG054c86 voice-dial-built
     try {
