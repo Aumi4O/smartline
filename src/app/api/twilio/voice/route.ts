@@ -101,12 +101,17 @@ export async function POST(req: NextRequest) {
     });
 
     const disclosure = getRecordingDisclosure();
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host")}`;
+    const fallbackAction = `${appUrl}/api/twilio/voice/fallback?conversationId=${encodeURIComponent(
+      conversation.id
+    )}`;
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">${disclosure}</Say>
   <Pause length="1"/>
-  <Dial answerOnBridge="true" timeout="30">
+  <Dial answerOnBridge="true" timeout="30" action="${escapeXml(fallbackAction)}" method="POST">
     <Sip>${escapeXml(sipUri)}</Sip>
   </Dial>
 </Response>`;

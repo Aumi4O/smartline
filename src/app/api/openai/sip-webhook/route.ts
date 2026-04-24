@@ -52,22 +52,50 @@ export async function POST(req: NextRequest) {
     const hintedLeadId = readSipHeader(sipHeaders, "X-SmartLine-LeadId");
     const hintedCampaignId = readSipHeader(sipHeaders, "X-SmartLine-CampaignId");
 
+    const calledNumber = extractPhoneFromSipUri(sipTo);
+    const callerPhone = extractPhoneFromSipUri(sipFrom);
+
+    // Org resolution — try in order:
+    //   1. X-SmartLine-OrgId SIP header (set by our own <Dial><Sip> TwiML)
+    //   2. organizations.openaiProjectId == project_id (per-tenant OpenAI project)
+    //   3. phoneNumbers.phoneNumber == calledNumber (shared fallback project)
+    //
+    // #3 is critical: when OPENAI_SIP_PROJECT_ID is a shared platform project,
+    // the `project_id` in the webhook matches *every* tenant, so we can't use
+    // it to identify one. The dialled number is our reliable tenant key.
     let org = hintedOrgId
-      ? await db.query.organizations.findFirst({ where: eq(organizations.id, hintedOrgId) })
+      ? await db.query.organizations.findFirst({
+          where: eq(organizations.id, hintedOrgId),
+        })
       : null;
+
     if (!org) {
       org = await db.query.organizations.findFirst({
         where: eq(organizations.openaiProjectId, projectId),
       });
     }
 
-    if (!org) {
-      console.error(`[sip-webhook] unknown project ${projectId}`);
-      return NextResponse.json({ error: "Unknown project" }, { status: 404 });
+    if (!org && calledNumber) {
+      const pn = await db.query.phoneNumbers.findFirst({
+        where: eq(phoneNumbers.phoneNumber, calledNumber),
+      });
+      if (pn) {
+        org = await db.query.organizations.findFirst({
+          where: eq(organizations.id, pn.orgId),
+        });
+      }
     }
 
-    const calledNumber = extractPhoneFromSipUri(sipTo);
-    const callerPhone = extractPhoneFromSipUri(sipFrom);
+    if (!org) {
+      console.error(
+        `[sip-webhook] org not found — project=${projectId} hintedOrg=${hintedOrgId} calledNumber=${calledNumber} callerPhone=${callerPhone}`
+      );
+      return NextResponse.json({ error: "Unknown org" }, { status: 404 });
+    }
+
+    console.log(
+      `[sip-webhook] org=${org.id} project=${projectId} called=${calledNumber} from=${callerPhone} hintedAgent=${hintedAgentId}`
+    );
 
     let agent = hintedAgentId
       ? await db.query.agents.findFirst({
@@ -158,21 +186,32 @@ export async function POST(req: NextRequest) {
       conversationId = created.id;
     }
 
-    const apiKey = org.openaiApiKeyEncrypted || process.env.OPENAI_API_KEY!;
+    // Per-tenant keys (org.openaiApiKeyEncrypted) are populated by the
+    // provisioning flow. They're stored *as the raw key* today — the
+    // "encrypted" column name predates KMS. If it looks like a real API key
+    // (sk-...) we use it. Otherwise fall back to the platform key so the
+    // agent can still answer.
+    const perTenantKey = org.openaiApiKeyEncrypted;
+    const apiKey =
+      perTenantKey && perTenantKey.startsWith("sk-")
+        ? perTenantKey
+        : process.env.OPENAI_API_KEY;
 
-    const acceptPayload = {
+    if (!apiKey) {
+      console.error(`[sip-webhook] no OpenAI API key available for org ${org.id}`);
+      return NextResponse.json({ error: "No API key" }, { status: 500 });
+    }
+
+    // Minimum-safe accept payload. We intentionally omit:
+    //  - tools (malformed function schemas silently kill the call)
+    //  - input_audio_transcription (model name varies by account)
+    //  - turn_detection (defaults are fine)
+    // Once the call is proven to connect, we can re-enable these.
+    const acceptPayload: Record<string, unknown> = {
       type: "realtime",
       model: "gpt-realtime",
       instructions: systemPrompt,
       voice: config.voice,
-      tools: config.tools,
-      input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-      turn_detection: {
-        type: "server_vad",
-        threshold: 0.5,
-        prefix_padding_ms: 300,
-        silence_duration_ms: 200,
-      },
     };
 
     const acceptRes = await fetch(
@@ -182,22 +221,26 @@ export async function POST(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
+          "OpenAI-Beta": "realtime=v1",
         },
         body: JSON.stringify(acceptPayload),
       }
     );
 
     if (!acceptRes.ok) {
-      const errText = await acceptRes.text();
-      console.error(`[sip-webhook] accept failed: ${acceptRes.status} - ${errText}`);
+      const errText = await acceptRes.text().catch(() => "");
+      const requestId = acceptRes.headers.get("x-request-id") || "";
+      console.error(
+        `[sip-webhook] accept failed: HTTP ${acceptRes.status} req=${requestId} body=${errText}`
+      );
       return NextResponse.json(
-        { error: "Failed to accept call" },
+        { error: "Failed to accept call", status: acceptRes.status, detail: errText },
         { status: 500 }
       );
     }
 
     console.log(
-      `[sip-webhook] accepted ${callId} → agent "${agent.name}" (org: ${org.slug}, dir: ${hintedDirection})`
+      `[sip-webhook] accepted ${callId} → agent "${agent.name}" voice=${config.voice} org=${org.slug} dir=${hintedDirection}`
     );
 
     return NextResponse.json({
