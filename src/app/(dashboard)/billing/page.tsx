@@ -95,9 +95,9 @@ export default function BillingPage() {
         {isInactive && (
           <Card>
             <CardHeader>
-              <CardTitle>Activate Your Account</CardTitle>
+              <CardTitle>Activate your account — $5 today</CardTitle>
               <CardDescription>
-                Pay a one-time $5 deposit to unlock your account. It converts to $5 in usage credits.
+                Pay $5 now to unlock full Pro access for 3 days. Auto-renews to $199/mo Pro after day 3 unless you cancel. The $5 converts into usage credits.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -105,7 +105,7 @@ export default function BillingPage() {
                 <ActivateButton />
               </div>
               <p className="mt-3 text-xs text-gray-400">
-                No subscription. Pay-as-you-go. Buy more credits anytime.
+                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month.
               </p>
             </CardContent>
           </Card>
@@ -128,9 +128,17 @@ export default function BillingPage() {
                   </p>
                 </div>
                 {isPro ? (
-                  <Button variant="secondary" onClick={handlePortal}>
-                    Manage Subscription
-                  </Button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Button variant="secondary" onClick={handlePortal}>
+                      Manage subscription
+                    </Button>
+                    <button
+                      onClick={handlePortal}
+                      className="text-xs text-gray-500 underline hover:text-black"
+                    >
+                      Cancel plan
+                    </button>
+                  </div>
                 ) : (
                   <Button onClick={handleSubscribe}>
                     Upgrade to Pro — $199/mo
