@@ -367,18 +367,59 @@ export async function POST(req: NextRequest) {
       voice,
     };
 
-    const acceptRes = await fetch(
-      `https://api.openai.com/v1/realtime/calls/${callId}/accept`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "OpenAI-Beta": "realtime=v1",
-        },
-        body: JSON.stringify(acceptPayload),
-      }
+    // #region DBG054c86 sip-webhook-pre-accept
+    // Log right before we call OpenAI /accept. Previously we never saw
+    // accept-ok or accept-fail in the logs after org resolution, which
+    // means either the fetch hung, the key was missing, or the function
+    // silently exited. This pins the last checkpoint before the fetch.
+    try {
+      console.log(
+        `[DBG054c86] sip-webhook.pre-accept ${JSON.stringify({
+          callId,
+          voice,
+          apiKeySource:
+            perTenantKey && perTenantKey.startsWith("sk-")
+              ? "per-tenant"
+              : "platform",
+          apiKeyPrefix: apiKey ? apiKey.slice(0, 10) : null,
+          promptLen: systemPrompt?.length || 0,
+        })}`
+      );
+    } catch {}
+    // #endregion
+
+    let acceptRes: Response;
+    try {
+      acceptRes = await fetch(
+        `https://api.openai.com/v1/realtime/calls/${callId}/accept`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "realtime=v1",
+          },
+          body: JSON.stringify(acceptPayload),
+        }
+      );
+    } catch (fetchErr) {
+      // #region DBG054c86 sip-webhook-accept-network-err
+      const emsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      console.error(`[DBG054c86] sip-webhook.accept-network-err ${emsg}`);
+      // #endregion
+      return NextResponse.json(
+        { error: "Accept fetch failed", detail: emsg },
+        { status: 500 }
+      );
+    }
+
+    // #region DBG054c86 sip-webhook-post-accept
+    console.log(
+      `[DBG054c86] sip-webhook.post-accept status=${acceptRes.status} reqId=${
+        acceptRes.headers.get("x-request-id") || ""
+      }`
     );
+    // #endregion
 
     if (!acceptRes.ok) {
       const errText = await acceptRes.text().catch(() => "");
@@ -470,7 +511,14 @@ export async function POST(req: NextRequest) {
       agentName: agent.name,
     });
   } catch (error) {
+    const emsg = error instanceof Error ? error.message : String(error);
+    const estack = error instanceof Error ? (error.stack || "").slice(0, 500) : "";
     console.error("[sip-webhook] error:", error);
+    // #region DBG054c86 sip-webhook-outer-catch
+    console.error(
+      `[DBG054c86] sip-webhook.outer-catch ${JSON.stringify({ msg: emsg, stack: estack })}`
+    );
+    // #endregion
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
