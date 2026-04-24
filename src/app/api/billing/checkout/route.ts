@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
 }
 
 async function handle(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const url = new URL(req.url);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
   const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
+  const promoCode = url.searchParams.get("promo")?.trim().toUpperCase() || "";
 
   const proLineItem = proPriceId
     ? { price: proPriceId, quantity: 1 }
@@ -50,9 +52,30 @@ async function handle(req: NextRequest) {
       };
 
   try {
+    // If a promo code was passed on the URL, look it up on Stripe and
+    // pre-apply it. Falls back silently to "allow promotion codes" if the
+    // code doesn't match so users can still type one into the Stripe page.
+    let preAppliedPromotionId: string | undefined;
+    if (promoCode) {
+      try {
+        const list = await stripe.promotionCodes.list({
+          code: promoCode,
+          active: true,
+          limit: 1,
+        });
+        if (list.data[0]?.id) preAppliedPromotionId = list.data[0].id;
+      } catch (err) {
+        console.warn("[billing/checkout] promo lookup failed:", err);
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      allow_promotion_codes: true,
+      // Only one of these can be set at a time. If we pre-applied a promo,
+      // Stripe locks it in; otherwise we let the user type any code.
+      ...(preAppliedPromotionId
+        ? { discounts: [{ promotion_code: preAppliedPromotionId }] }
+        : { allow_promotion_codes: true }),
       // Stripe collects the email and creates the customer. No auth needed.
       customer_creation: "always",
       billing_address_collection: "auto",
@@ -78,6 +101,7 @@ async function handle(req: NextRequest) {
       metadata: {
         type: "guest_activation_trial",
         amountCents: String(ACTIVATION_AMOUNT_CENTS),
+        ...(promoCode ? { promoCode } : {}),
       },
       success_url: `${appUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/?checkout=cancelled`,
