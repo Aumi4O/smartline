@@ -12,27 +12,37 @@ export async function createSubAccount(orgId: string, orgName: string) {
     friendlyName: `SmartLine: ${orgName}`,
   });
 
-  const trunk = await client.trunking.v1.trunks.create({
-    friendlyName: `${orgName} SIP Trunk`,
-    domainName: `${orgId.slice(0, 8)}.pstn.twilio.com`,
-  });
-
-  await client.trunking.v1
-    .trunks(trunk.sid)
-    .originationUrls.create({
-      friendlyName: "OpenAI Realtime",
-      sipUrl: `sip:+@${OPENAI_SIP_URI}`,
-      priority: 1,
-      weight: 1,
-      enabled: true,
+  let trunkSid: string | null = null;
+  try {
+    const trunk = await client.trunking.v1.trunks.create({
+      friendlyName: `${orgName} SIP Trunk`,
+      domainName: `${orgId.slice(0, 8)}.pstn.twilio.com`,
     });
+
+    await client.trunking.v1
+      .trunks(trunk.sid)
+      .originationUrls.create({
+        friendlyName: "OpenAI Realtime",
+        sipUrl: `sip:+@${OPENAI_SIP_URI}`,
+        priority: 1,
+        weight: 1,
+        enabled: true,
+      });
+
+    trunkSid = trunk.sid;
+  } catch (err) {
+    console.warn(
+      `[twilio] SIP trunk skipped for org ${orgId} — Media Streams flow will still work.`,
+      err instanceof Error ? err.message : err
+    );
+  }
 
   await db
     .update(organizations)
     .set({
       twilioSubAccountSid: subAccount.sid,
       twilioSubAuthToken: subAccount.authToken,
-      twilioSipTrunkSid: trunk.sid,
+      ...(trunkSid ? { twilioSipTrunkSid: trunkSid } : {}),
       updatedAt: new Date(),
     })
     .where(eq(organizations.id, orgId));
@@ -40,7 +50,7 @@ export async function createSubAccount(orgId: string, orgName: string) {
   return {
     subAccountSid: subAccount.sid,
     authToken: subAccount.authToken,
-    trunkSid: trunk.sid,
+    trunkSid,
   };
 }
 
@@ -72,7 +82,8 @@ export async function searchAvailableNumbers(
 
 export async function purchasePhoneNumber(
   orgId: string,
-  number: string
+  number: string,
+  agentId?: string
 ) {
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, orgId),
@@ -99,17 +110,16 @@ export async function purchasePhoneNumber(
     statusCallbackMethod: "POST",
   });
 
-  if (org.twilioSipTrunkSid) {
-    const masterClient = getMasterClient();
-    await masterClient.trunking.v1
-      .trunks(org.twilioSipTrunkSid)
-      .phoneNumbers.create({ phoneNumberSid: purchased.sid });
-  }
+  // Do NOT attach this number to org.twilioSipTrunkSid: that trunk (if any) is created on the
+  // *master* account in createSubAccount, while the number lives on the *sub-account*. Twilio
+  // requires the trunk and number in the same account. Inbound voice uses voiceUrl (Media
+  // Streams) and does not need trunk ↔ number linking for this architecture.
 
   const [row] = await db
     .insert(phoneNumbers)
     .values({
       orgId,
+      agentId: agentId ?? null,
       phoneNumber: purchased.phoneNumber,
       twilioSid: purchased.sid,
       capabilities: ["voice", "sms"],

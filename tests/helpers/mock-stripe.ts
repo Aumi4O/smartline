@@ -81,9 +81,9 @@ export const mockStripe = {
       async create(params: {
         customer: string;
         mode: string;
-        line_items: Array<{ price_data: { unit_amount: number } }>;
+        line_items: Array<{ price_data: { unit_amount: number; recurring?: { interval: string } } }>;
         metadata?: Record<string, string>;
-        subscription_data?: { metadata?: Record<string, string> };
+        subscription_data?: { metadata?: Record<string, string>; trial_period_days?: number };
         success_url: string;
         cancel_url: string;
       }) {

@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
 
       if (!orgId) break;
 
-      if (type === "activation") {
+      if (type === "activation" || type === "activation_trial") {
         const amountCents = parseInt(session.metadata?.amountCents || "500", 10);
         await addCredits(
           orgId,
           amountCents,
-          "Activation deposit — $5.00 credits",
+          "Activation — $5.00 usage credits",
           "purchase",
           { stripeSessionId: session.id }
         );
@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
         provisionOrg(orgId).catch((err) =>
           console.error(`Background provisioning failed for ${orgId}:`, err)
         );
+        if (type === "activation_trial" && session.subscription) {
+          await activateSubscription(orgId, session.subscription as string);
+        }
       }
 
       if (type === "subscription" && session.subscription) {
@@ -73,9 +76,15 @@ export async function POST(req: NextRequest) {
       const orgId = sub.metadata?.orgId;
       if (!orgId) break;
 
-      if (sub.status === "active") {
+      const status = sub.status;
+      // Keep Pro while Stripe still considers the subscription "live" (incl. dunning).
+      const proStatuses = new Set(["active", "trialing", "past_due"]);
+      // Ended or will not pay — mirror customer.subscription.deleted
+      const endedStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
+
+      if (proStatuses.has(status)) {
         await activateSubscription(orgId, sub.id);
-      } else if (sub.status === "canceled") {
+      } else if (endedStatuses.has(status)) {
         await cancelSubscription(orgId);
       }
       break;

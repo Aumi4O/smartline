@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   providers: [
-    Google,
+    Google({ allowDangerousEmailAccountLinking: true }),
     Resend({
       from: process.env.AUTH_EMAIL_FROM ?? "SmartLine <onboarding@resend.dev>",
     }),
@@ -26,6 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
     verifyRequest: "/login/verify",
+    error: "/auth-error",
   },
   callbacks: {
     session({ session, user }) {

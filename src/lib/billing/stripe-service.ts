@@ -2,7 +2,7 @@ import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { PLANS, ACTIVATION_AMOUNT_CENTS } from "@/lib/pricing";
+import { PLANS, ACTIVATION_AMOUNT_CENTS, PRO_TRIAL_DAYS } from "@/lib/pricing";
 
 export async function getOrCreateStripeCustomer(
   orgId: string,
@@ -31,29 +31,64 @@ export async function getOrCreateStripeCustomer(
   return customer.id;
 }
 
+/**
+ * $5 one-time (credits) + SmartLine Pro at $199/mo with a 3-day trial, then auto-renew.
+ * Implemented as one subscription Checkout: recurring Pro Price line + one-time $5 line.
+ *
+ * The Pro line references STRIPE_PRO_PRICE_ID (created by scripts/stripe-bootstrap.mjs).
+ * This lets the `TESTER` promo code — whose coupon has `applies_to: [Pro product]` —
+ * discount only the $199 line, never the $5 activation.
+ */
 export async function createActivationCheckout(
   orgId: string,
   customerId: string,
   successUrl: string,
   cancelUrl: string
 ) {
+  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
+
+  const proLineItem: import("stripe").Stripe.Checkout.SessionCreateParams.LineItem = proPriceId
+    ? { price: proPriceId, quantity: 1 }
+    : {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: PLANS.pro.name,
+            description: `Full Pro access. $199/mo after a ${PRO_TRIAL_DAYS}-day trial — cancel before then to avoid subscription billing.`,
+          },
+          recurring: { interval: "month" },
+          unit_amount: PLANS.pro.monthlyPriceCents,
+        },
+        quantity: 1,
+      };
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
-    mode: "payment",
+    mode: "subscription",
+    allow_promotion_codes: true,
     line_items: [
+      proLineItem,
       {
         price_data: {
           currency: "usd",
           product_data: {
-            name: "SmartLine Activation",
-            description: "$5.00 deposit — converts to usage credits instantly",
+            name: "Activation — $5 usage credits",
+            description: "One-time today. Credited to your org balance at checkout.",
           },
           unit_amount: ACTIVATION_AMOUNT_CENTS,
         },
         quantity: 1,
       },
     ],
-    metadata: { orgId, type: "activation", amountCents: String(ACTIVATION_AMOUNT_CENTS) },
+    subscription_data: {
+      trial_period_days: PRO_TRIAL_DAYS,
+      metadata: { orgId },
+    },
+    metadata: {
+      orgId,
+      type: "activation_trial",
+      amountCents: String(ACTIVATION_AMOUNT_CENTS),
+    },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });
@@ -67,11 +102,11 @@ export async function createSubscriptionCheckout(
   successUrl: string,
   cancelUrl: string
 ) {
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [
-      {
+  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
+
+  const proLineItem: import("stripe").Stripe.Checkout.SessionCreateParams.LineItem = proPriceId
+    ? { price: proPriceId, quantity: 1 }
+    : {
         price_data: {
           currency: "usd",
           product_data: {
@@ -82,8 +117,13 @@ export async function createSubscriptionCheckout(
           unit_amount: PLANS.pro.monthlyPriceCents,
         },
         quantity: 1,
-      },
-    ],
+      };
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    allow_promotion_codes: true,
+    line_items: [proLineItem],
     subscription_data: {
       metadata: { orgId },
     },
@@ -153,6 +193,7 @@ export async function cancelSubscription(orgId: string) {
     .set({
       plan: "starter",
       planStatus: "active",
+      stripeSubscriptionId: null,
       updatedAt: new Date(),
     })
     .where(eq(organizations.id, orgId));

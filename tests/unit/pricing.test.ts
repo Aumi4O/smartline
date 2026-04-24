@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MARKUP,
   ACTIVATION_AMOUNT_CENTS,
+  PRO_TRIAL_DAYS,
   PLANS,
   PAYG_LIMITS,
   PRO_LIMITS,
@@ -19,6 +20,10 @@ describe("pricing constants", () => {
 
   it("activation deposit is $5 (500 cents)", () => {
     expect(ACTIVATION_AMOUNT_CENTS).toBe(500);
+  });
+
+  it("Pro checkout trial is 3 days before first $199", () => {
+    expect(PRO_TRIAL_DAYS).toBe(3);
   });
 
   it("pro plan is $199/month", () => {

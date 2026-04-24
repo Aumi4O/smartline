@@ -102,7 +102,8 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       data: {
         object: {
           id: "cs_test_activation_1",
-          metadata: { orgId: org.id, type: "activation", amountCents: "500" },
+          metadata: { orgId: org.id, type: "activation_trial", amountCents: "500" },
+          subscription: "sub_test_trialing_1",
         },
       },
     });
@@ -123,7 +124,8 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       .select()
       .from(organizations)
       .where(eq(organizations.id, org.id));
-    expect(updated.planStatus).toBe("active");
+    expect(updated.planStatus).toBe("pro");
+    expect(updated.stripeSubscriptionId).toBe("sub_test_trialing_1");
   });
 
   it("stores stripeSessionId in transaction metadata (idempotency key)", async () => {
@@ -135,7 +137,8 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       data: {
         object: {
           id: "cs_test_activation_2",
-          metadata: { orgId: org.id, type: "activation", amountCents: "500" },
+          metadata: { orgId: org.id, type: "activation_trial", amountCents: "500" },
+          subscription: "sub_test_trialing_2",
         },
       },
     });
@@ -251,6 +254,33 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     expect(updated.stripeSubscriptionId).toBe("sub_test_xyz");
   });
 
+  it("customer.subscription.updated past_due → still Pro (dunning)", async () => {
+    const db = await getTestDb();
+    const org = await createOrg(db, { planStatus: "pro", plan: "pro" });
+
+    queueEvent({
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_test_pastdue",
+          status: "past_due",
+          metadata: { orgId: org.id },
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    const { organizations } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
+    expect(updated.plan).toBe("pro");
+  });
+
   it("customer.subscription.updated active → activates", async () => {
     const db = await getTestDb();
     const org = await createOrg(db, { planStatus: "active" });
@@ -304,6 +334,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
     expect(updated.plan).toBe("starter");
     expect(updated.planStatus).toBe("active");
+    expect(updated.stripeSubscriptionId).toBeNull();
   });
 
   it("customer.subscription.deleted → cancels", async () => {
@@ -330,6 +361,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const { eq } = await import("drizzle-orm");
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
     expect(updated.plan).toBe("starter");
+    expect(updated.stripeSubscriptionId).toBeNull();
   });
 
   it("subscription event with missing orgId is a safe no-op", async () => {

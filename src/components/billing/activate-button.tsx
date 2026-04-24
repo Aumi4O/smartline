@@ -23,7 +23,9 @@ export function ActivateButton() {
 
   return (
     <Button onClick={handleActivate} disabled={loading} className="w-full" size="lg">
-      {loading ? "Redirecting to payment..." : "Activate Account — $5.00"}
+      {loading
+        ? "Redirecting to payment..."
+        : "Start — $5 today, 3-day Pro trial, then $199/mo"}
     </Button>
   );
 }

@@ -189,22 +189,26 @@ describe("POST /api/billing/activate", () => {
     expect(body.error).toMatch(/already activated/i);
   });
 
-  it("creates $5 activation checkout for inactive orgs", async () => {
+  it("creates $5 + 3-day Pro trial checkout (subscription) for inactive orgs", async () => {
     await authAsOrgOwner("inactive");
     const { status, body } = await invokeRoute<{ url: string }>(activateRoute.POST, {
       method: "POST",
     });
     expect(status).toBe(200);
-    expect(body.url).toMatch(/checkout\.stripe\.com/);
+    expect(body.url).toMatch(/checkout\.stripe.com/);
     const createCall = mockStripeState.calls.find((c) => c.op === "checkout.sessions.create");
     const args = createCall!.args[0] as {
       mode: string;
       line_items: Array<{ price_data: { unit_amount: number } }>;
       metadata: Record<string, string>;
+      subscription_data: { trial_period_days: number; metadata: Record<string, string> };
     };
-    expect(args.mode).toBe("payment");
-    expect(args.line_items[0].price_data.unit_amount).toBe(500);
-    expect(args.metadata.type).toBe("activation");
+    expect(args.mode).toBe("subscription");
+    expect(args.line_items).toHaveLength(2);
+    expect(args.line_items[0].price_data.unit_amount).toBe(19900);
+    expect(args.line_items[1].price_data.unit_amount).toBe(500);
+    expect(args.metadata.type).toBe("activation_trial");
+    expect(args.subscription_data.trial_period_days).toBe(3);
   });
 
   it("rate-limits billing endpoint to 5 req/min", async () => {

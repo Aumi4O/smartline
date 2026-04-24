@@ -3,16 +3,17 @@
  * Usage prices include a 20% platform markup over raw provider costs.
  *
  * ACTIVATION MODEL:
- *   - New users pay a $5 activation deposit (becomes real credits).
- *   - No free tier — every dollar of usage is paid.
- *   - After activation, users are on pay-as-you-go.
- *   - Optional: upgrade to Pro ($199/mo) for premium features.
- *   - $5 stays in their balance — not lost, just a deposit.
+ *   - Checkout charges $5 once (credits) + starts Pro at $199/mo with a 3-day trial.
+ *   - After the trial, Stripe bills $199/mo; usage is on top of credits.
+ *   - Cancel in the Customer Portal before trial ends to avoid the first $199.
  */
 
 export const MARKUP = 1.2;
 
 export const ACTIVATION_AMOUNT_CENTS = 500;
+
+/** Pro subscription trial in Checkout (first $199 is after this many days). */
+export const PRO_TRIAL_DAYS = 3;
 
 export const PLANS = {
   pro: {

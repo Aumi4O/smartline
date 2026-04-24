@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { phoneNumbers } from "@/lib/db/schema";
+import { phoneNumbers, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { getAgentForCall, buildCallConfig, createCallRecord } from "@/lib/calls/call-handler";
+import { getAgentForCall, createCallRecord } from "@/lib/calls/call-handler";
 import { getRecordingDisclosure, grantConsent } from "@/lib/compliance/consent";
 import { logAuditEvent } from "@/lib/compliance/audit";
+import { provisionOrg } from "@/lib/provisioning/orchestrator";
+import { buildSipUri, escapeXml } from "@/lib/sip";
 
 /**
  * Twilio voice webhook — called when someone dials a SmartLine number.
- * 
- * Flow:
- * 1. Twilio calls this webhook with the dialed number + caller info
- * 2. We look up which org/agent owns this number
- * 3. We return TwiML that connects to OpenAI Realtime via Media Streams
+ *
+ * Architecture: we hand the call straight to OpenAI's SIP Connector via
+ * TwiML `<Dial><Sip>sip:{openaiProjectId}@sip.openai.com;transport=tls</Sip></Dial>`.
+ * OpenAI then fires `realtime.call.incoming` to /api/openai/sip-webhook which
+ * accepts the call and configures the agent. No WebSocket bridge needed, which
+ * is important because Vercel serverless cannot host long-lived WS connections.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -45,21 +48,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = await buildCallConfig(phoneRecord.orgId, agent.id, from);
+    let org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, phoneRecord.orgId),
+    });
+
+    if (!org?.openaiProjectId) {
+      try {
+        await provisionOrg(phoneRecord.orgId);
+        org = await db.query.organizations.findFirst({
+          where: eq(organizations.id, phoneRecord.orgId),
+        });
+      } catch (err) {
+        console.error(`[twilio/voice] OpenAI auto-provision failed for ${phoneRecord.orgId}:`, err);
+      }
+    }
+
+    if (!org?.openaiProjectId) {
+      return new NextResponse(
+        twiml("This agent is still being set up. Please try again in a minute. Goodbye.", true),
+        { headers: { "Content-Type": "text/xml" } }
+      );
+    }
 
     const conversation = await createCallRecord(
       phoneRecord.orgId,
       agent.id,
       "phone",
       from,
-      { callSid, calledNumber: cleanNumber }
+      { callSid, calledNumber: cleanNumber, direction: "inbound" }
     );
 
     grantConsent(phoneRecord.orgId, from, "recording", "call_disclosure").catch(() => {});
     logAuditEvent(phoneRecord.orgId, "call.inbound", "conversation", conversation.id, undefined, undefined, { from, callSid }).catch(() => {});
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const wsUrl = appUrl.replace("https://", "wss://").replace("http://", "ws://");
+    const sipUri = buildSipUri(org.openaiProjectId, {
+      "X-SmartLine-OrgId": phoneRecord.orgId,
+      "X-SmartLine-AgentId": agent.id,
+      "X-SmartLine-ConversationId": conversation.id,
+      "X-SmartLine-Direction": "inbound",
+    });
 
     const disclosure = getRecordingDisclosure();
 
@@ -67,16 +94,9 @@ export async function POST(req: NextRequest) {
 <Response>
   <Say voice="Polly.Joanna">${disclosure}</Say>
   <Pause length="1"/>
-  <Connect>
-    <Stream url="${wsUrl}/api/twilio/media-stream">
-      <Parameter name="conversationId" value="${conversation.id}"/>
-      <Parameter name="agentId" value="${agent.id}"/>
-      <Parameter name="orgId" value="${phoneRecord.orgId}"/>
-      <Parameter name="callerPhone" value="${from}"/>
-      <Parameter name="voice" value="${config.voice}"/>
-      <Parameter name="language" value="${config.language}"/>
-    </Stream>
-  </Connect>
+  <Dial answerOnBridge="true" timeout="30">
+    <Sip>${escapeXml(sipUri)}</Sip>
+  </Dial>
 </Response>`;
 
     return new NextResponse(xml, { headers: { "Content-Type": "text/xml" } });
@@ -101,3 +121,4 @@ function twiml(message: string, hangup = false): string {
   ${hangup ? "<Hangup/>" : ""}
 </Response>`;
 }
+

@@ -85,9 +85,12 @@ describe("POST /api/twilio/voice — inbound call routing", () => {
     expect(xml).toContain("No agent is configured");
   });
 
-  it("returns <Connect><Stream> TwiML when number + agent are configured", async () => {
+  it("returns <Dial><Sip> TwiML routing to OpenAI SIP Connector", async () => {
     const db = await getTestDb();
-    const org = await createOrg(db, { planStatus: "active" });
+    const org = await createOrg(db, {
+      planStatus: "active",
+      openaiProjectId: "proj_testABC",
+    });
     const agent = await createAgent(db, org.id, { name: "Helper" });
     await createPhoneNumber(db, org.id, agent.id, { phoneNumber: "+15550002222" });
 
@@ -98,14 +101,18 @@ describe("POST /api/twilio/voice — inbound call routing", () => {
     });
     const res = await twilioVoice.POST(req);
     const xml = await res.text();
-    expect(xml).toContain("<Connect>");
-    expect(xml).toContain("<Stream url=");
-    expect(xml).toContain('name="orgId"');
+    expect(xml).toContain("<Dial");
+    expect(xml).toContain("<Sip>");
+    expect(xml).toContain("sip:proj_testABC@sip.openai.com;transport=tls");
+    expect(xml).toContain("X-SmartLine-OrgId");
   });
 
   it("creates conversation record for inbound call", async () => {
     const db = await getTestDb();
-    const org = await createOrg(db, { planStatus: "active" });
+    const org = await createOrg(db, {
+      planStatus: "active",
+      openaiProjectId: "proj_testABC",
+    });
     const agent = await createAgent(db, org.id);
     await createPhoneNumber(db, org.id, agent.id, { phoneNumber: "+15550003333" });
 
@@ -129,7 +136,10 @@ describe("POST /api/twilio/voice — inbound call routing", () => {
 
   it("auto-grants recording consent on inbound call", async () => {
     const db = await getTestDb();
-    const org = await createOrg(db, { planStatus: "active" });
+    const org = await createOrg(db, {
+      planStatus: "active",
+      openaiProjectId: "proj_testABC",
+    });
     const agent = await createAgent(db, org.id);
     await createPhoneNumber(db, org.id, agent.id, { phoneNumber: "+15550004444" });
 

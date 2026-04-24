@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { leads, campaigns, agents } from "@/lib/db/schema";
+import { leads, campaigns, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { buildCallConfig, createCallRecord } from "@/lib/calls/call-handler";
+import { createCallRecord } from "@/lib/calls/call-handler";
 import { getRecordingDisclosure } from "@/lib/compliance/consent";
+import { provisionOrg } from "@/lib/provisioning/orchestrator";
+import { buildSipUri, escapeXml } from "@/lib/sip";
 
 /**
  * Twilio outbound call webhook — called when an outbound call connects.
- * Returns TwiML to route the call to OpenAI via Media Streams.
+ * Returns TwiML to bridge the call to OpenAI SIP Connector via `<Dial><Sip>`.
  *
  * Handles AMD (Answering Machine Detection):
- * - Human answered → connect to AI agent
- * - Voicemail → play message or hang up based on campaign config
+ * - Human answered  → bridge to OpenAI SIP
+ * - Voicemail       → play message or hang up per campaign config
+ *
+ * Lead/campaign context is passed to the SIP webhook via custom X-SmartLine-*
+ * SIP headers on the Sip URI (Twilio forwards them, OpenAI echoes them in the
+ * `realtime.call.incoming` payload under `call.headers`).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -32,14 +38,20 @@ export async function POST(req: NextRequest) {
       ? await db.query.leads.findFirst({ where: eq(leads.id, leadId) })
       : null;
 
-    const isVoicemail = answeredBy === "machine_start" || answeredBy === "machine_end_beep" || answeredBy === "machine_end_silence";
+    const isVoicemail =
+      answeredBy === "machine_start" ||
+      answeredBy === "machine_end_beep" ||
+      answeredBy === "machine_end_silence";
 
     if (isVoicemail) {
       const action = campaign?.voicemailAction || "leave_message";
 
       if (action === "hang_up") {
         if (lead) {
-          await db.update(leads).set({ status: "voicemail", outcome: "voicemail", updatedAt: new Date() }).where(eq(leads.id, lead.id));
+          await db
+            .update(leads)
+            .set({ status: "voicemail", outcome: "voicemail", updatedAt: new Date() })
+            .where(eq(leads.id, lead.id));
         }
         return new NextResponse(
           `<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>`,
@@ -47,11 +59,15 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const vmMessage = campaign?.voicemailMessage
-        || `Hi${lead?.firstName ? ` ${lead.firstName}` : ""}, this is a call from SmartLine. We'll try you again later, or you can call us back at your convenience. Thank you!`;
+      const vmMessage =
+        campaign?.voicemailMessage ||
+        `Hi${lead?.firstName ? ` ${lead.firstName}` : ""}, this is a call from SmartLine. We'll try you again later, or you can call us back at your convenience. Thank you!`;
 
       if (lead) {
-        await db.update(leads).set({ status: "voicemail", outcome: "voicemail", updatedAt: new Date() }).where(eq(leads.id, lead.id));
+        await db
+          .update(leads)
+          .set({ status: "voicemail", outcome: "voicemail", updatedAt: new Date() })
+          .where(eq(leads.id, lead.id));
       }
 
       const clean = vmMessage.replace(/&/g, " and ").replace(/</g, "").replace(/>/g, "");
@@ -79,23 +95,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = await buildCallConfig(orgId, agentId, to);
+    let org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId),
+    });
 
-    let outboundContext = "";
-    if (lead) {
-      const parts = [];
-      if (lead.firstName || lead.lastName) parts.push(`You are calling ${[lead.firstName, lead.lastName].filter(Boolean).join(" ")}.`);
-      if (lead.company) parts.push(`They work at ${lead.company}.`);
-      if (lead.notes) parts.push(`Context: ${lead.notes}`);
-      outboundContext = parts.join(" ");
-    }
-    if (campaign?.outboundPrompt) {
-      outboundContext = campaign.outboundPrompt + "\n" + outboundContext;
+    if (!org?.openaiProjectId) {
+      try {
+        await provisionOrg(orgId);
+        org = await db.query.organizations.findFirst({
+          where: eq(organizations.id, orgId),
+        });
+      } catch (err) {
+        console.error(`[twilio/outbound] OpenAI auto-provision failed for ${orgId}:`, err);
+      }
     }
 
-    const fullPrompt = outboundContext
-      ? `${config.systemPrompt}\n\nOUTBOUND CALL CONTEXT:\n${outboundContext}`
-      : config.systemPrompt;
+    if (!org?.openaiProjectId) {
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">This agent is still being set up. Goodbye.</Say>
+  <Hangup/>
+</Response>`,
+        { headers: { "Content-Type": "text/xml" } }
+      );
+    }
 
     const conversation = await createCallRecord(orgId, agentId, "phone", to, {
       callSid,
@@ -105,11 +129,20 @@ export async function POST(req: NextRequest) {
     });
 
     if (lead) {
-      await db.update(leads).set({ lastConversationId: conversation.id, updatedAt: new Date() }).where(eq(leads.id, lead.id));
+      await db
+        .update(leads)
+        .set({ lastConversationId: conversation.id, updatedAt: new Date() })
+        .where(eq(leads.id, lead.id));
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const wsUrl = appUrl.replace("https://", "wss://").replace("http://", "ws://");
+    const sipUri = buildSipUri(org.openaiProjectId, {
+      "X-SmartLine-OrgId": orgId,
+      "X-SmartLine-AgentId": agentId,
+      "X-SmartLine-ConversationId": conversation.id,
+      "X-SmartLine-Direction": "outbound",
+      ...(leadId ? { "X-SmartLine-LeadId": leadId } : {}),
+      ...(campaignId ? { "X-SmartLine-CampaignId": campaignId } : {}),
+    });
 
     const disclosure = getRecordingDisclosure();
 
@@ -117,17 +150,9 @@ export async function POST(req: NextRequest) {
 <Response>
   <Say voice="Polly.Joanna">${disclosure}</Say>
   <Pause length="1"/>
-  <Connect>
-    <Stream url="${wsUrl}/api/twilio/media-stream">
-      <Parameter name="conversationId" value="${conversation.id}"/>
-      <Parameter name="agentId" value="${agentId}"/>
-      <Parameter name="orgId" value="${orgId}"/>
-      <Parameter name="callerPhone" value="${to}"/>
-      <Parameter name="voice" value="${config.voice}"/>
-      <Parameter name="language" value="${config.language}"/>
-      <Parameter name="direction" value="outbound"/>
-    </Stream>
-  </Connect>
+  <Dial answerOnBridge="true" timeout="30">
+    <Sip>${escapeXml(sipUri)}</Sip>
+  </Dial>
 </Response>`;
 
     return new NextResponse(xml, { headers: { "Content-Type": "text/xml" } });
@@ -143,3 +168,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
