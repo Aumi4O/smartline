@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { organizations, agents, phoneNumbers, conversations, leads, campaigns } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { buildCallConfig, createCallRecord } from "@/lib/calls/call-handler";
 import { readSipHeader } from "@/lib/sip";
+import { toE164BestEffort } from "@/lib/phone/e164";
 import crypto from "node:crypto";
+
+/** Cold webhook + accept() can need extra time on Vercel; avoid timing out the INVITE. */
+export const maxDuration = 60;
 
 /**
  * OpenAI SIP Connector webhook — receives `realtime.call.incoming` events.
@@ -39,6 +43,16 @@ export async function POST(req: NextRequest) {
     const sipHeaders = body.call?.headers as Record<string, string | string[]> | undefined;
     const sipFrom = readSipHeader(sipHeaders, "from") || body.call?.from;
     const sipTo = readSipHeader(sipHeaders, "to") || body.call?.to;
+
+    // Trace every incoming INVITE so we can see the exact header shape OpenAI
+    // is sending. Keeps diagnosis fast when a call doesn't connect.
+    try {
+      console.log(
+        `[sip-webhook] incoming call=${callId} project=${projectId} from=${sipFrom || ""} to=${sipTo || ""} headerKeys=${
+          sipHeaders ? Object.keys(sipHeaders).join(",") : ""
+        }`
+      );
+    } catch {}
 
     if (!callId || !projectId) {
       console.error("[sip-webhook] missing call_id or project_id");
@@ -76,8 +90,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!org && calledNumber) {
+      const uniqueNumbers = [calledNumber, toE164BestEffort(calledNumber)].filter(
+        (n, i, a) => n && a.indexOf(n) === i
+      ) as string[];
       const pn = await db.query.phoneNumbers.findFirst({
-        where: eq(phoneNumbers.phoneNumber, calledNumber),
+        where: inArray(phoneNumbers.phoneNumber, uniqueNumbers),
       });
       if (pn) {
         org = await db.query.organizations.findFirst({
@@ -86,9 +103,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // OpenAI often puts the project id in the SIP "To" user-part, not the
+    // Twilio E.164 — so `calledNumber` is empty. We still have
+    // X-SmartLine-* in most cases, but this fallback fixes the case where
+    // only the conversation id round-trips reliably.
+    if (!org && hintedConversationId) {
+      const convo = await db.query.conversations.findFirst({
+        where: eq(conversations.id, hintedConversationId),
+      });
+      if (convo) {
+        org = await db.query.organizations.findFirst({
+          where: eq(organizations.id, convo.orgId),
+        });
+      }
+    }
+
     if (!org) {
       console.error(
-        `[sip-webhook] org not found — project=${projectId} hintedOrg=${hintedOrgId} calledNumber=${calledNumber} callerPhone=${callerPhone}`
+        `[sip-webhook] org not found — project=${projectId} hintedOrg=${hintedOrgId} calledNumber=${calledNumber} callerPhone=${callerPhone} conversationHint=${hintedConversationId || ""}`
       );
       return NextResponse.json({ error: "Unknown org" }, { status: 404 });
     }
@@ -108,11 +140,11 @@ export async function POST(req: NextRequest) {
       : null;
 
     if (!agent && calledNumber) {
+      const nums = [calledNumber, toE164BestEffort(calledNumber)].filter(
+        (n, i, a) => n && a.indexOf(n) === i
+      ) as string[];
       const pn = await db.query.phoneNumbers.findFirst({
-        where: and(
-          eq(phoneNumbers.orgId, org.id),
-          eq(phoneNumbers.phoneNumber, calledNumber)
-        ),
+        where: and(eq(phoneNumbers.orgId, org.id), inArray(phoneNumbers.phoneNumber, nums)),
       });
       if (pn?.agentId) {
         agent = await db.query.agents.findFirst({
@@ -207,11 +239,12 @@ export async function POST(req: NextRequest) {
     //  - input_audio_transcription (model name varies by account)
     //  - turn_detection (defaults are fine)
     // Once the call is proven to connect, we can re-enable these.
+    const voice = pickRealtimeVoice(config.voice);
     const acceptPayload: Record<string, unknown> = {
       type: "realtime",
       model: "gpt-realtime",
       instructions: systemPrompt,
-      voice: config.voice,
+      voice,
     };
 
     const acceptRes = await fetch(
@@ -240,7 +273,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(
-      `[sip-webhook] accepted ${callId} → agent "${agent.name}" voice=${config.voice} org=${org.slug} dir=${hintedDirection}`
+      `[sip-webhook] accepted ${callId} → agent "${agent.name}" voice=${voice} org=${org.slug} dir=${hintedDirection}`
     );
 
     return NextResponse.json({
@@ -257,8 +290,37 @@ export async function POST(req: NextRequest) {
 
 function extractPhoneFromSipUri(uri: string | undefined | null): string {
   if (!uri) return "";
-  const match = uri.match(/sip:(\+?\d+)@/);
-  return match ? match[1] : String(uri).replace(/[^\d+]/g, "");
+  const s = String(uri);
+  const m = s.match(/sip:([^@;?]+)@/i);
+  if (m) {
+    const user = m[1].trim();
+    if (/^\+?[\d]+$/.test(user)) {
+      return toE164BestEffort(user);
+    }
+    return "";
+  }
+  return toE164BestEffort(s);
+}
+
+const REALTIME_VOICES = new Set([
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "fable",
+  "marin",
+  "cedar",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+  "verse",
+]);
+
+function pickRealtimeVoice(v: string | undefined | null): string {
+  if (v && REALTIME_VOICES.has(v)) return v;
+  return "shimmer";
 }
 
 /**

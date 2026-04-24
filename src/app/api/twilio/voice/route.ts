@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-${disclosureSay}  <Dial answerOnBridge="true" timeout="30" action="${escapeXml(fallbackAction)}" method="POST">
+${disclosureSay}  <Dial answerOnBridge="true" timeout="90" action="${escapeXml(fallbackAction)}" method="POST">
     <Sip>${escapeXml(sipUri)}</Sip>
   </Dial>
 </Response>`;
