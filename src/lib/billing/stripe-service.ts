@@ -47,7 +47,7 @@ export async function createActivationCheckout(
 ) {
   const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
 
-  const proLineItem: import("stripe").Stripe.Checkout.SessionCreateParams.LineItem = proPriceId
+  const proLineItem = proPriceId
     ? { price: proPriceId, quantity: 1 }
     : {
         price_data: {
@@ -56,7 +56,7 @@ export async function createActivationCheckout(
             name: PLANS.pro.name,
             description: `Full Pro access. $199/mo after a ${PRO_TRIAL_DAYS}-day trial — cancel before then to avoid subscription billing.`,
           },
-          recurring: { interval: "month" },
+          recurring: { interval: "month" as const },
           unit_amount: PLANS.pro.monthlyPriceCents,
         },
         quantity: 1,
@@ -104,7 +104,7 @@ export async function createSubscriptionCheckout(
 ) {
   const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
 
-  const proLineItem: import("stripe").Stripe.Checkout.SessionCreateParams.LineItem = proPriceId
+  const proLineItem = proPriceId
     ? { price: proPriceId, quantity: 1 }
     : {
         price_data: {
@@ -113,7 +113,7 @@ export async function createSubscriptionCheckout(
             name: PLANS.pro.name,
             description: "AI voice agents platform — 3 agents, 5GB storage, priority support",
           },
-          recurring: { interval: "month" },
+          recurring: { interval: "month" as const },
           unit_amount: PLANS.pro.monthlyPriceCents,
         },
         quantity: 1,
