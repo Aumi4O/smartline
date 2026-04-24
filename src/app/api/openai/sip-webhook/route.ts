@@ -27,7 +27,43 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
 
+    // #region DBG054c86 sip-webhook-entry
+    try {
+      const __dbg = {
+        sessionId: "054c86",
+        runId: "initial",
+        hypothesisId: "H2,H3",
+        location: "src/app/api/openai/sip-webhook/route.ts:POST-entry",
+        message: "openai webhook reached",
+        data: {
+          contentType: req.headers.get("content-type") || "",
+          hasSig: !!req.headers.get("webhook-signature"),
+          hasId: !!req.headers.get("webhook-id"),
+          hasTs: !!req.headers.get("webhook-timestamp"),
+          bodyLen: rawBody.length,
+          hasWebhookSecretEnv: !!process.env.OPENAI_WEBHOOK_SECRET,
+        },
+        timestamp: Date.now(),
+      };
+      console.log(`[DBG054c86] sip-webhook.enter ${JSON.stringify(__dbg.data)}`);
+      fetch(
+        "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "054c86",
+          },
+          body: JSON.stringify(__dbg),
+        }
+      ).catch(() => {});
+    } catch {}
+    // #endregion
+
     if (!verifyOpenAISignature(req, rawBody)) {
+      // #region DBG054c86 sip-webhook-sig-fail
+      console.log(`[DBG054c86] sip-webhook.sig-fail`);
+      // #endregion
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -266,6 +302,40 @@ export async function POST(req: NextRequest) {
       console.error(
         `[sip-webhook] accept failed: HTTP ${acceptRes.status} req=${requestId} body=${errText}`
       );
+      // #region DBG054c86 sip-webhook-accept-fail
+      try {
+        const __dbg = {
+          sessionId: "054c86",
+          runId: "initial",
+          hypothesisId: "H4",
+          location: "src/app/api/openai/sip-webhook/route.ts:accept-fail",
+          message: "openai accept rejected",
+          data: {
+            httpStatus: acceptRes.status,
+            requestId,
+            bodySnippet: errText.slice(0, 400),
+            voice,
+            orgId: org.id,
+            agentId: agent.id,
+            apiKeySource:
+              perTenantKey && perTenantKey.startsWith("sk-") ? "per-tenant" : "platform",
+          },
+          timestamp: Date.now(),
+        };
+        console.log(`[DBG054c86] sip-webhook.accept-fail ${JSON.stringify(__dbg.data)}`);
+        fetch(
+          "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "054c86",
+            },
+            body: JSON.stringify(__dbg),
+          }
+        ).catch(() => {});
+      } catch {}
+      // #endregion
       return NextResponse.json(
         { error: "Failed to accept call", status: acceptRes.status, detail: errText },
         { status: 500 }
@@ -275,6 +345,39 @@ export async function POST(req: NextRequest) {
     console.log(
       `[sip-webhook] accepted ${callId} → agent "${agent.name}" voice=${voice} org=${org.slug} dir=${hintedDirection}`
     );
+
+    // #region DBG054c86 sip-webhook-accept-ok
+    try {
+      const __dbg = {
+        sessionId: "054c86",
+        runId: "initial",
+        hypothesisId: "H2,H3,H4",
+        location: "src/app/api/openai/sip-webhook/route.ts:accept-ok",
+        message: "openai accept succeeded",
+        data: {
+          callId,
+          orgId: org.id,
+          agentId: agent.id,
+          voice,
+          projectId,
+          direction: hintedDirection,
+        },
+        timestamp: Date.now(),
+      };
+      console.log(`[DBG054c86] sip-webhook.accept-ok ${JSON.stringify(__dbg.data)}`);
+      fetch(
+        "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "054c86",
+          },
+          body: JSON.stringify(__dbg),
+        }
+      ).catch(() => {});
+    } catch {}
+    // #endregion
 
     return NextResponse.json({
       accepted: true,
