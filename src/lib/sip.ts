@@ -6,7 +6,19 @@
  * the call and configures the agent (model, voice, instructions, tools).
  */
 
-export const OPENAI_SIP_HOST = "sip.openai.com";
+/**
+ * OpenAI Realtime SIP Connector hostname.
+ *
+ * Must be `sip.api.openai.com` (NOT `sip.openai.com`, which does not
+ * resolve and causes Twilio to return SIP 476 / error 32011
+ * "Unresolvable destination").
+ *
+ * Reference: https://developers.openai.com/api/docs/guides/realtime-sip
+ * "Point your SIP trunk at the OpenAI SIP endpoint, using the project ID
+ *  for which you configured the webhook, e.g.,
+ *  `sip:$PROJECT_ID@sip.api.openai.com;transport=tls`."
+ */
+export const OPENAI_SIP_HOST = "sip.api.openai.com";
 
 /**
  * Builds a SIP URI to OpenAI SIP Connector with optional custom SIP headers.
