@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ActivateButton } from "@/components/billing/activate-button";
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
+import { VoiceReadinessCard } from "@/components/dashboard/voice-readiness";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -122,6 +123,8 @@ export default async function DashboardPage() {
         hasPhone={hasPhone}
         hasProfile={hasProfile}
       />
+
+      <VoiceReadinessCard />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (

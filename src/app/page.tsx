@@ -5,6 +5,7 @@ import {
   getHearItTalkHref,
   hearItTalkClassName,
 } from "@/lib/marketing";
+import { StartCTA } from "@/components/marketing/start-cta";
 
 const ACCENT = "#0066FF";
 
@@ -135,10 +136,11 @@ export default function HomePage() {
               cost of a single receptionist.
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href={START_LOGIN_HREF} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto">Start for $5</Button>
-              </a>
+            <div className="mx-auto mt-8 flex max-w-[520px] flex-col items-stretch gap-3">
+              <StartCTA
+                label="Start for $5 →"
+                caption={null}
+              />
               <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>
@@ -566,10 +568,8 @@ export default function HomePage() {
               <span className="font-medium text-black">It is to turn it on.</span>
             </p>
 
-            <div className="mt-8 flex justify-center">
-              <a href={START_LOGIN_HREF}>
-                <Button size="lg">Start for $5 — 3 days full access</Button>
-              </a>
+            <div className="mx-auto mt-8 max-w-[520px]">
+              <StartCTA label="Start for $5 — 3 days full access" caption={null} />
             </div>
           </div>
         </section>
@@ -627,9 +627,14 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <a href={START_LOGIN_HREF} className="mt-6 block">
-                  <Button className="w-full">Activate now</Button>
-                </a>
+                <div className="mt-6">
+                  <StartCTA
+                    label="Activate now"
+                    size="default"
+                    caption={null}
+                    layout="stack"
+                  />
+                </div>
               </div>
 
               {/* Step 2 — Pro auto-starts */}
@@ -665,6 +670,15 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
+
+                <div className="mt-6 rounded-xl bg-white p-3 [&_input]:border-gray-300 [&_p]:!text-gray-500">
+                  <StartCTA
+                    label="Start for $5 →"
+                    size="default"
+                    layout="stack"
+                    caption="Pay $5 now · Pro auto-starts day 4"
+                  />
+                </div>
               </div>
 
               {/* Step 3 — Usage on top */}
@@ -724,9 +738,9 @@ export default function HomePage() {
             </div>
 
             <div className="mt-12 flex flex-col items-center gap-3">
-              <a href={START_LOGIN_HREF}>
-                <Button size="lg">Start for $5 — 3 days full access</Button>
-              </a>
+              <div className="w-full max-w-[520px]">
+                <StartCTA label="Start for $5 — 3 days full access" caption={null} />
+              </div>
               <p className="text-xs text-gray-500">
                 $5 today · $199/mo auto-starts on day 4 · cancel anytime before to owe nothing more.
               </p>
@@ -1035,10 +1049,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href={START_LOGIN_HREF} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto">Start for $5</Button>
-              </a>
+            <div className="mx-auto mt-12 flex max-w-[640px] flex-col items-stretch gap-3">
+              <StartCTA label="Start for $5 →" caption={null} />
               <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>

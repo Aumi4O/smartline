@@ -10,6 +10,7 @@ const navigation = [
   { name: "Phone Numbers", href: "/phone-numbers" },
   { name: "Leads", href: "/leads" },
   { name: "Campaigns", href: "/campaigns" },
+  { name: "Integrations", href: "/integrations" },
   { name: "Calls", href: "/calls" },
   { name: "Knowledge", href: "/knowledge" },
   { name: "Analytics", href: "/analytics" },
