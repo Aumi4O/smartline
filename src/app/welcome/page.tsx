@@ -9,21 +9,47 @@ const ACCENT = "#0066FF";
 
 function WelcomeContent() {
   const params = useSearchParams();
+  const sessionId = params.get("session_id");
   const emailFromUrl = params.get("email") || "";
-  const activated = params.get("activated") === "1";
 
   const [email, setEmail] = useState(emailFromUrl);
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(!!sessionId);
+  const [error, setError] = useState<string | null>(null);
 
-  // If we landed here from a successful Stripe checkout, send the magic
-  // link immediately so the user doesn't have to think.
   useEffect(() => {
-    if (activated && emailFromUrl && !sent) {
-      void send(emailFromUrl);
-    }
+    if (!sessionId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/billing/session-email?session_id=${encodeURIComponent(sessionId)}`
+        );
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (res.ok && data.email) {
+          setEmail(data.email);
+          await send(data.email);
+        } else {
+          setError("We couldn't look up your checkout. Enter your email below.");
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Network issue. Enter your email below.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionId]);
 
   async function send(to: string) {
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return;
@@ -34,6 +60,18 @@ function WelcomeContent() {
     } finally {
       setSending(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-[480px] text-center">
+        <div
+          className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-gray-200"
+          style={{ borderTopColor: ACCENT }}
+        />
+        <p className="mt-6 text-sm text-gray-500">Confirming your payment…</p>
+      </div>
+    );
   }
 
   return (
@@ -56,21 +94,25 @@ function WelcomeContent() {
       </div>
 
       <h1 className="mt-6 text-3xl font-semibold tracking-tight text-black">
-        {activated ? "Payment received" : "Welcome to SmartLine"}
+        {sessionId ? "Payment received" : "Welcome to SmartLine"}
       </h1>
       <p className="mt-3 text-gray-600">
-        {activated
-          ? "Your $5 activation is charged. Your agent is unlocked."
-          : "Sign in to pick up where you left off."}
+        {sessionId
+          ? "Your $5 is charged and your agent is unlocked."
+          : "Enter your email and we'll send you a one-click sign-in link."}
       </p>
+
+      {error && (
+        <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+      )}
 
       {sent ? (
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 text-left">
           <p className="text-sm font-medium text-black">Check your email</p>
           <p className="mt-2 text-sm text-gray-600">
             We just sent a sign-in link to{" "}
-            <span className="font-medium text-black">{email}</span>.
-            Click it to open your dashboard and set up your first agent.
+            <span className="font-medium text-black">{email}</span>. Click it to
+            open your dashboard and set up your first agent.
           </p>
           <p className="mt-4 text-xs text-gray-400">
             Didn&apos;t get it? Check spam, or{" "}
@@ -112,7 +154,7 @@ function WelcomeContent() {
       )}
 
       <p className="mt-8 text-xs text-gray-400">
-        We&apos;ll email a one-click sign-in link. No password. No hassle.
+        One-click sign-in. No password.
       </p>
     </div>
   );

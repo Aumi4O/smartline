@@ -29,12 +29,29 @@ export async function POST(req: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const orgId = session.metadata?.orgId;
+      let orgId = session.metadata?.orgId;
       const type = session.metadata?.type;
+
+      // Guest checkout: no orgId in metadata because the visitor had no
+      // account when they clicked "Start for $5". Create user + org now
+      // from the email Stripe collected on its hosted page.
+      if (!orgId && type === "guest_activation_trial") {
+        const email = session.customer_details?.email?.toLowerCase();
+        if (email) {
+          orgId = await provisionGuestAccount(
+            email,
+            session.customer as string | null
+          );
+        }
+      }
 
       if (!orgId) break;
 
-      if (type === "activation" || type === "activation_trial") {
+      if (
+        type === "activation" ||
+        type === "activation_trial" ||
+        type === "guest_activation_trial"
+      ) {
         const amountCents = parseInt(session.metadata?.amountCents || "500", 10);
         await addCredits(
           orgId,
@@ -47,7 +64,11 @@ export async function POST(req: NextRequest) {
         provisionOrg(orgId).catch((err) =>
           console.error(`Background provisioning failed for ${orgId}:`, err)
         );
-        if (type === "activation_trial" && session.subscription) {
+        if (
+          (type === "activation_trial" ||
+            type === "guest_activation_trial") &&
+          session.subscription
+        ) {
           await activateSubscription(orgId, session.subscription as string);
         }
       }
@@ -112,4 +133,82 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Called when a guest pays via Stripe before having an account.
+ * Creates users + organizations + orgMemberships + creditBalances rows,
+ * links the Stripe customer to the new org, and returns the orgId so the
+ * rest of the webhook can add credits / activate the subscription.
+ *
+ * Idempotent by email — a repeat payment from the same email reuses the
+ * existing org rather than making a duplicate.
+ */
+async function provisionGuestAccount(
+  email: string,
+  stripeCustomerId: string | null
+): Promise<string | undefined> {
+  try {
+    let user = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (!user) {
+      const [created] = await db
+        .insert(users)
+        .values({ email, name: email.split("@")[0] })
+        .returning();
+      user = created;
+    }
+
+    const membership = await db.query.orgMemberships.findFirst({
+      where: eq(orgMemberships.userId, user.id),
+      with: { organization: true },
+    });
+
+    if (membership?.organization) {
+      if (stripeCustomerId && !membership.organization.stripeCustomerId) {
+        await db
+          .update(organizations)
+          .set({ stripeCustomerId })
+          .where(eq(organizations.id, membership.organization.id));
+      }
+      return membership.organization.id;
+    }
+
+    const slug = email
+      .split("@")[0]
+      .replace(/[^a-z0-9-]/gi, "-")
+      .toLowerCase();
+    const name = slug
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+    const [org] = await db
+      .insert(organizations)
+      .values({
+        name,
+        slug: `${slug}-${Date.now().toString(36)}`,
+        plan: "starter",
+        planStatus: "inactive",
+        stripeCustomerId: stripeCustomerId || undefined,
+      })
+      .returning();
+
+    await db.insert(orgMemberships).values({
+      userId: user.id,
+      orgId: org.id,
+      role: "owner",
+    });
+
+    await db
+      .insert(creditBalances)
+      .values({ orgId: org.id, balanceCents: 0 })
+      .onConflictDoNothing();
+
+    return org.id;
+  } catch (err) {
+    console.error("[stripe/webhook] provisionGuestAccount failed:", err);
+    return undefined;
+  }
 }

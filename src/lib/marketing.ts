@@ -7,15 +7,18 @@ import { cn } from "@/lib/utils";
 /**
  * Primary "Start for $5" CTA.
  *
- * Points at /api/billing/start which:
- *   - redirects signed-out users to /login?next=/api/billing/start
- *   - redirects signed-in users straight to a fresh Stripe Checkout session
- *   - redirects already-active users to /dashboard
+ * Points at /api/billing/checkout — a guest-friendly endpoint that creates
+ * a Stripe Checkout Session ($5 today + 3-day trial + $199/mo auto-start)
+ * and 302-redirects the visitor straight to Stripe.
  *
- * One click → Stripe or login, whichever is appropriate.
+ * No email form on our side. Stripe's own page collects the email and the
+ * card. On payment, our webhook creates the user+org and emails a magic
+ * sign-in link.
+ *
+ * One click on any homepage button → Stripe.
  */
 export const START_LOGIN_HREF =
-  process.env.NEXT_PUBLIC_START_URL?.trim() || "/api/billing/start";
+  process.env.NEXT_PUBLIC_START_URL?.trim() || "/api/billing/checkout";
 
 /** E.164 demo line for "Hear It Talk" (e.g. +18005551212). If unset, we scroll to #how. */
 export const DEMO_PHONE_E164 = process.env.NEXT_PUBLIC_DEMO_PHONE_E164?.trim() || "";
