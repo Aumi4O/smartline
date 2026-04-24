@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
     let org = membership?.organization;
     if (!org) {
       const slug = email.split("@")[0].replace(/[^a-z0-9-]/gi, "-").toLowerCase();
-      const name = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const name = slug
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
       const [created] = await db
         .insert(organizations)

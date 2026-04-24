@@ -24,7 +24,9 @@ export async function getOrCreateOrg(userId: string, email: string) {
   if (existing?.organization) return existing.organization;
 
   const slug = email.split("@")[0].replace(/[^a-z0-9-]/gi, "-").toLowerCase();
-  const name = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const name = slug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
   const [org] = await db.insert(organizations).values({
     name,
