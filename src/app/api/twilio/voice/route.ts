@@ -115,44 +115,6 @@ export async function POST(req: NextRequest) {
       "X-SmartLine-Direction": "inbound",
     });
 
-    // #region DBG054c86 voice-dial-built
-    try {
-      const __dbg = {
-        sessionId: "054c86",
-        runId: "initial",
-        hypothesisId: "H1,H2,H3",
-        location: "src/app/api/twilio/voice/route.ts:sipUri",
-        message: "voice dial plan built",
-        data: {
-          from,
-          calledRaw: called,
-          calledClean: cleanNumber,
-          orgId: phoneRecord.orgId,
-          agentId: agent.id,
-          conversationId: conversation.id,
-          projectId,
-          projectSource: org?.openaiProjectId ? "per-tenant" : "shared-env",
-          sipUri,
-          playDisclosure,
-          hasOpenaiSipProjectEnv: !!process.env.OPENAI_SIP_PROJECT_ID,
-        },
-        timestamp: Date.now(),
-      };
-      console.log(`[DBG054c86] voice.dial ${JSON.stringify(__dbg.data)}`);
-      fetch(
-        "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "054c86",
-          },
-          body: JSON.stringify(__dbg),
-        }
-      ).catch(() => {});
-    } catch {}
-    // #endregion
-
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host")}`;
     const fallbackAction = `${appUrl}/api/twilio/voice/fallback?conversationId=${encodeURIComponent(

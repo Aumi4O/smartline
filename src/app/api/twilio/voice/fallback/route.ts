@@ -21,51 +21,13 @@ export async function POST(req: NextRequest) {
   const duration = String(form.get("DialCallDuration") || "");
 
   const formDump: string[] = [];
-  const rawFields: Record<string, string> = {};
   form.forEach((v, k) => {
-    rawFields[k] = String(v);
     if (k.startsWith("Digits")) return;
     formDump.push(`${k}=${v}`);
   });
   console.log(
     `[twilio/voice/fallback] status=${status} sip=${sipCode} callSid=${callSid} dialSid=${recipientCallSid} duration=${duration}s ${formDump.join(" ")}`
   );
-
-  // #region DBG054c86 fallback-entry
-  try {
-    const __dbg = {
-      sessionId: "054c86",
-      runId: "initial",
-      hypothesisId: "H1,H4,H5",
-      location: "src/app/api/twilio/voice/fallback/route.ts:POST",
-      message: "dial fallback fired",
-      data: {
-        status,
-        sipCode,
-        callSid,
-        recipientCallSid,
-        duration,
-        errorCode: rawFields["ErrorCode"] || "",
-        errorMessage: rawFields["ErrorMessage"] || "",
-        sipResponseCode: rawFields["DialSipResponseCode"] || "",
-        allFields: rawFields,
-      },
-      timestamp: Date.now(),
-    };
-    console.log(`[DBG054c86] voice.fallback ${JSON.stringify(__dbg.data)}`);
-    fetch(
-      "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "054c86",
-        },
-        body: JSON.stringify(__dbg),
-      }
-    ).catch(() => {});
-  } catch {}
-  // #endregion
 
   const dur = duration ? parseInt(duration, 10) : 0;
   const connected =

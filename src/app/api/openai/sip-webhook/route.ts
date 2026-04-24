@@ -27,43 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
 
-    // #region DBG054c86 sip-webhook-entry
-    try {
-      const __dbg = {
-        sessionId: "054c86",
-        runId: "initial",
-        hypothesisId: "H2,H3",
-        location: "src/app/api/openai/sip-webhook/route.ts:POST-entry",
-        message: "openai webhook reached",
-        data: {
-          contentType: req.headers.get("content-type") || "",
-          hasSig: !!req.headers.get("webhook-signature"),
-          hasId: !!req.headers.get("webhook-id"),
-          hasTs: !!req.headers.get("webhook-timestamp"),
-          bodyLen: rawBody.length,
-          hasWebhookSecretEnv: !!process.env.OPENAI_WEBHOOK_SECRET,
-        },
-        timestamp: Date.now(),
-      };
-      console.log(`[DBG054c86] sip-webhook.enter ${JSON.stringify(__dbg.data)}`);
-      fetch(
-        "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "054c86",
-          },
-          body: JSON.stringify(__dbg),
-        }
-      ).catch(() => {});
-    } catch {}
-    // #endregion
-
     if (!verifyOpenAISignature(req, rawBody)) {
-      // #region DBG054c86 sip-webhook-sig-fail
-      console.log(`[DBG054c86] sip-webhook.sig-fail`);
-      // #endregion
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -111,70 +75,7 @@ export async function POST(req: NextRequest) {
       );
     } catch {}
 
-    // #region DBG054c86 sip-webhook-parse-ok
-    try {
-      const __dbg = {
-        sessionId: "054c86",
-        runId: "post-fix",
-        hypothesisId: "H12",
-        location: "src/app/api/openai/sip-webhook/route.ts:parsed",
-        message: "parsed webhook envelope",
-        data: {
-          callId: callId || null,
-          projectId: projectId || null,
-          sipFromSnippet: typeof sipFrom === "string" ? sipFrom.slice(0, 120) : null,
-          sipToSnippet: typeof sipTo === "string" ? sipTo.slice(0, 120) : null,
-          headerNames,
-        },
-        timestamp: Date.now(),
-      };
-      console.log(`[DBG054c86] sip-webhook.parsed ${JSON.stringify(__dbg.data)}`);
-    } catch {}
-    // #endregion
-
     if (!callId || !projectId) {
-      // #region DBG054c86 sip-webhook-payload-shape
-      try {
-        // Safe to log: event metadata + top-level keys only, no secrets.
-        // Helps us see OpenAI's actual envelope shape when our parser
-        // misses the call id / project id.
-        const topKeys = Object.keys(body || {});
-        const dataKeys = body?.data ? Object.keys(body.data) : [];
-        const dataCallKeys = body?.data?.call ? Object.keys(body.data.call) : [];
-        const callKeysFromRoot = body?.call ? Object.keys(body.call) : [];
-        const __dbg = {
-          sessionId: "054c86",
-          runId: "initial",
-          hypothesisId: "H12",
-          location: "src/app/api/openai/sip-webhook/route.ts:missing-fields",
-          message: "webhook body missing call_id/project_id — logging shape",
-          data: {
-            eventType,
-            topKeys,
-            dataKeys,
-            dataCallKeys,
-            callKeysFromRoot,
-            bodyLen: rawBody.length,
-            bodySnippet: rawBody.slice(0, 600),
-          },
-          timestamp: Date.now(),
-        };
-        console.log(
-          `[DBG054c86] sip-webhook.shape ${JSON.stringify(__dbg.data)}`
-        );
-        fetch(
-          "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "054c86",
-            },
-            body: JSON.stringify(__dbg),
-          }
-        ).catch(() => {});
-      } catch {}
-      // #endregion
       console.error("[sip-webhook] missing call_id or project_id");
       return NextResponse.json({ error: "Missing call info" }, { status: 400 });
     }
@@ -362,68 +263,27 @@ export async function POST(req: NextRequest) {
     const voice = pickRealtimeVoice(config.voice);
     // OpenAI's /v1/realtime/calls/:id/accept REST endpoint does NOT accept a
     // top-level `type` field. `type` is a *WebSocket message* field (e.g.
-    // "session.update") and including it here causes a 400:
+    // "session.update") and including it here causes HTTP 400
     //   {"error":{"message":"Unknown parameter: 'session.type'."}}
-    // Confirmed by runtime log [DBG054c86] sip-webhook.post-accept status=400.
+    // which in turn causes the SIP bridge to fail with 403 to Twilio.
     const acceptPayload: Record<string, unknown> = {
       model: "gpt-realtime",
       instructions: systemPrompt,
       voice,
     };
 
-    // #region DBG054c86 sip-webhook-pre-accept
-    // Log right before we call OpenAI /accept. Previously we never saw
-    // accept-ok or accept-fail in the logs after org resolution, which
-    // means either the fetch hung, the key was missing, or the function
-    // silently exited. This pins the last checkpoint before the fetch.
-    try {
-      console.log(
-        `[DBG054c86] sip-webhook.pre-accept ${JSON.stringify({
-          callId,
-          voice,
-          apiKeySource:
-            perTenantKey && perTenantKey.startsWith("sk-")
-              ? "per-tenant"
-              : "platform",
-          apiKeyPrefix: apiKey ? apiKey.slice(0, 10) : null,
-          promptLen: systemPrompt?.length || 0,
-        })}`
-      );
-    } catch {}
-    // #endregion
-
-    let acceptRes: Response;
-    try {
-      acceptRes = await fetch(
-        `https://api.openai.com/v1/realtime/calls/${callId}/accept`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "OpenAI-Beta": "realtime=v1",
-          },
-          body: JSON.stringify(acceptPayload),
-        }
-      );
-    } catch (fetchErr) {
-      // #region DBG054c86 sip-webhook-accept-network-err
-      const emsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      console.error(`[DBG054c86] sip-webhook.accept-network-err ${emsg}`);
-      // #endregion
-      return NextResponse.json(
-        { error: "Accept fetch failed", detail: emsg },
-        { status: 500 }
-      );
-    }
-
-    // #region DBG054c86 sip-webhook-post-accept
-    console.log(
-      `[DBG054c86] sip-webhook.post-accept status=${acceptRes.status} reqId=${
-        acceptRes.headers.get("x-request-id") || ""
-      }`
+    const acceptRes = await fetch(
+      `https://api.openai.com/v1/realtime/calls/${callId}/accept`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "OpenAI-Beta": "realtime=v1",
+        },
+        body: JSON.stringify(acceptPayload),
+      }
     );
-    // #endregion
 
     if (!acceptRes.ok) {
       const errText = await acceptRes.text().catch(() => "");
@@ -431,40 +291,6 @@ export async function POST(req: NextRequest) {
       console.error(
         `[sip-webhook] accept failed: HTTP ${acceptRes.status} req=${requestId} body=${errText}`
       );
-      // #region DBG054c86 sip-webhook-accept-fail
-      try {
-        const __dbg = {
-          sessionId: "054c86",
-          runId: "initial",
-          hypothesisId: "H4",
-          location: "src/app/api/openai/sip-webhook/route.ts:accept-fail",
-          message: "openai accept rejected",
-          data: {
-            httpStatus: acceptRes.status,
-            requestId,
-            bodySnippet: errText.slice(0, 400),
-            voice,
-            orgId: org.id,
-            agentId: agent.id,
-            apiKeySource:
-              perTenantKey && perTenantKey.startsWith("sk-") ? "per-tenant" : "platform",
-          },
-          timestamp: Date.now(),
-        };
-        console.log(`[DBG054c86] sip-webhook.accept-fail ${JSON.stringify(__dbg.data)}`);
-        fetch(
-          "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "054c86",
-            },
-            body: JSON.stringify(__dbg),
-          }
-        ).catch(() => {});
-      } catch {}
-      // #endregion
       return NextResponse.json(
         { error: "Failed to accept call", status: acceptRes.status, detail: errText },
         { status: 500 }
@@ -475,39 +301,6 @@ export async function POST(req: NextRequest) {
       `[sip-webhook] accepted ${callId} → agent "${agent.name}" voice=${voice} org=${org.slug} dir=${hintedDirection}`
     );
 
-    // #region DBG054c86 sip-webhook-accept-ok
-    try {
-      const __dbg = {
-        sessionId: "054c86",
-        runId: "initial",
-        hypothesisId: "H2,H3,H4",
-        location: "src/app/api/openai/sip-webhook/route.ts:accept-ok",
-        message: "openai accept succeeded",
-        data: {
-          callId,
-          orgId: org.id,
-          agentId: agent.id,
-          voice,
-          projectId,
-          direction: hintedDirection,
-        },
-        timestamp: Date.now(),
-      };
-      console.log(`[DBG054c86] sip-webhook.accept-ok ${JSON.stringify(__dbg.data)}`);
-      fetch(
-        "http://127.0.0.1:7245/ingest/74910cf5-e5e4-4115-b915-2f0a3acaea88",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "054c86",
-          },
-          body: JSON.stringify(__dbg),
-        }
-      ).catch(() => {});
-    } catch {}
-    // #endregion
-
     return NextResponse.json({
       accepted: true,
       callId,
@@ -515,14 +308,7 @@ export async function POST(req: NextRequest) {
       agentName: agent.name,
     });
   } catch (error) {
-    const emsg = error instanceof Error ? error.message : String(error);
-    const estack = error instanceof Error ? (error.stack || "").slice(0, 500) : "";
     console.error("[sip-webhook] error:", error);
-    // #region DBG054c86 sip-webhook-outer-catch
-    console.error(
-      `[DBG054c86] sip-webhook.outer-catch ${JSON.stringify({ msg: emsg, stack: estack })}`
-    );
-    // #endregion
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
