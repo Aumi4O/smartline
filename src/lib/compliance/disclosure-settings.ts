@@ -32,10 +32,12 @@ export function ensureDisclosureColumn(): Promise<void> {
 export async function getDisclosureMode(orgId: string): Promise<DisclosureMode> {
   await ensureDisclosureColumn();
   try {
-    const res = await db.execute<{ recording_disclosure_mode: string | null }>(
+    // drizzle's postgres-js driver returns rows as an array-like directly
+    // (no `.rows` wrapper, unlike node-postgres).
+    const res = (await db.execute(
       sql`SELECT recording_disclosure_mode FROM organizations WHERE id = ${orgId} LIMIT 1`
-    );
-    const row = res.rows?.[0] as { recording_disclosure_mode?: string | null } | undefined;
+    )) as unknown as Array<{ recording_disclosure_mode?: string | null }>;
+    const row = Array.isArray(res) ? res[0] : undefined;
     const val = row?.recording_disclosure_mode;
     if (val === "always" || val === "first_call" || val === "never") return val;
   } catch (err) {
