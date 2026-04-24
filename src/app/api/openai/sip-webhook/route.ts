@@ -360,8 +360,12 @@ export async function POST(req: NextRequest) {
     //  - turn_detection (defaults are fine)
     // Once the call is proven to connect, we can re-enable these.
     const voice = pickRealtimeVoice(config.voice);
+    // OpenAI's /v1/realtime/calls/:id/accept REST endpoint does NOT accept a
+    // top-level `type` field. `type` is a *WebSocket message* field (e.g.
+    // "session.update") and including it here causes a 400:
+    //   {"error":{"message":"Unknown parameter: 'session.type'."}}
+    // Confirmed by runtime log [DBG054c86] sip-webhook.post-accept status=400.
     const acceptPayload: Record<string, unknown> = {
-      type: "realtime",
       model: "gpt-realtime",
       instructions: systemPrompt,
       voice,
