@@ -70,7 +70,9 @@ export async function GET() {
     const promo = promos.data[0];
     if (promo) {
       report.stripe.testerPromoActive = promo.active;
-      report.stripe.testerCouponOff = promo.coupon?.amount_off ?? null;
+      const c = promo.promotion?.coupon;
+      const coupon = c && typeof c !== "string" ? c : null;
+      report.stripe.testerCouponOff = coupon?.amount_off ?? null;
     }
   } catch (err) {
     report.stripe.error = err instanceof Error ? err.message : String(err);

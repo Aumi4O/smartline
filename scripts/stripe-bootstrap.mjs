@@ -119,7 +119,12 @@ async function main() {
   }
 
   let promo = await findPromoCode();
-  if (promo && promo.coupon.id !== coupon.id) {
+  const existingCouponId = promo?.promotion
+    ? typeof promo.promotion.coupon === "string"
+      ? promo.promotion.coupon
+      : promo.promotion.coupon?.id
+    : undefined;
+  if (promo && existingCouponId && existingCouponId !== coupon.id) {
     console.log(`[!] Existing TESTER promo ${promo.id} points at a different coupon; deactivating.`);
     await stripe.promotionCodes.update(promo.id, { active: false });
     promo = null;
@@ -132,7 +137,7 @@ async function main() {
     }
   } else {
     promo = await stripe.promotionCodes.create({
-      coupon: coupon.id,
+      promotion: { coupon: coupon.id, type: "coupon" },
       code: PROMO_CODE,
       active: true,
     });
