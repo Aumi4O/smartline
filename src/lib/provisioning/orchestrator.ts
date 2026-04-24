@@ -31,14 +31,34 @@ export async function provisionOrg(orgId: string) {
     results.twilio = "already provisioned";
   }
 
-  if (!org.openaiProjectId) {
+  // Skip per-tenant OpenAI project provisioning when the operator has
+  // explicitly opted into using only the shared OPENAI_SIP_PROJECT_ID.
+  // Also skip if OPENAI_ADMIN_KEY is missing, so we don't spam 403s into
+  // the logs — the shared project fallback handles the call just fine.
+  const useSharedProject =
+    process.env.OPENAI_AUTO_PROVISION === "0" ||
+    !process.env.OPENAI_ADMIN_KEY;
+
+  if (!org.openaiProjectId && !useSharedProject) {
     try {
       const openai = await createOpenAIProject(orgId, org.name);
       results.openai = `project ${openai.projectId}`;
     } catch (error) {
-      console.error(`OpenAI provisioning failed for ${orgId}:`, error);
-      results.openai = "failed";
+      const msg = error instanceof Error ? error.message : String(error);
+      // Missing admin scopes is a configuration choice, not a bug. Log
+      // once at info level and move on — the shared project picks up.
+      if (msg.includes("api.management.write") || msg.includes("403")) {
+        console.log(
+          `[provisioning] skipping per-tenant OpenAI project for ${orgId}: admin key lacks api.management.write — using OPENAI_SIP_PROJECT_ID fallback.`
+        );
+        results.openai = "shared-fallback";
+      } else {
+        console.error(`OpenAI provisioning failed for ${orgId}:`, error);
+        results.openai = "failed";
+      }
     }
+  } else if (useSharedProject) {
+    results.openai = "shared-fallback";
   } else {
     results.openai = "already provisioned";
   }
