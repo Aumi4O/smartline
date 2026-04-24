@@ -76,8 +76,9 @@ async function handle(req: NextRequest) {
       ...(preAppliedPromotionId
         ? { discounts: [{ promotion_code: preAppliedPromotionId }] }
         : { allow_promotion_codes: true }),
-      // Stripe collects the email and creates the customer. No auth needed.
-      customer_creation: "always",
+      // Note: subscription mode automatically creates the customer from
+      // the email Stripe collects. Passing `customer_creation` here is
+      // an error (`can only be used in payment mode`).
       billing_address_collection: "auto",
       line_items: [
         proLineItem,
