@@ -102,7 +102,9 @@ export function normalizeInboundLead(
     "campaign_name",
     "source_list",
   ]);
-  const segment = normalizeSegment(typeof segmentRaw === "string" ? segmentRaw : undefined);
+  const segment =
+    normalizeSegment(typeof segmentRaw === "string" ? segmentRaw : undefined) ??
+    null;
 
   const source =
     (pick(flat, ["source", "utm_source", "referrer", "provider", "channel"]) as string) ||
