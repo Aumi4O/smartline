@@ -4,6 +4,14 @@ import { activateSubscription, cancelSubscription } from "@/lib/billing/stripe-s
 import { addCredits } from "@/lib/billing/credits";
 import { activateOrg } from "@/lib/org";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
+import { db } from "@/lib/db";
+import {
+  users,
+  organizations,
+  orgMemberships,
+  creditBalances,
+} from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
