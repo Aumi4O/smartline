@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 interface Props {
   /** Label on the primary submit button. */
   label?: string;
-  /** Visual size; matches the shadcn Button sizes. */
-  size?: "default" | "sm" | "lg";
+  /** Visual size; matches the project's Button sizes. */
+  size?: "sm" | "md" | "lg";
   /** Full-width on mobile. */
   fullWidth?: boolean;
   /** Caption under the form (small gray text). Pass null to hide. */

@@ -630,7 +630,7 @@ export default function HomePage() {
                 <div className="mt-6">
                   <StartCTA
                     label="Activate now"
-                    size="default"
+                    size="md"
                     caption={null}
                     layout="stack"
                   />
@@ -674,7 +674,7 @@ export default function HomePage() {
                 <div className="mt-6 rounded-xl bg-white p-3 [&_input]:border-gray-300 [&_p]:!text-gray-500">
                   <StartCTA
                     label="Start for $5 →"
-                    size="default"
+                    size="md"
                     layout="stack"
                     caption="Pay $5 now · Pro auto-starts day 4"
                   />
