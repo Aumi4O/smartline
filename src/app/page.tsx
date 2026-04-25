@@ -730,6 +730,76 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Carrier compliance — be upfront so SMS/WhatsApp customers
+                aren't surprised at registration fees they pay directly to
+                Twilio, The Campaign Registry, and Meta (not to us). */}
+            <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-black">
+                Carrier compliance — read before you launch SMS or WhatsApp
+              </p>
+              <p className="mt-3 text-sm text-gray-600">
+                US carriers and Meta require business verification before
+                they let any platform — ours included — send SMS or
+                WhatsApp at scale. These fees are charged by them, not us,
+                and we walk you through the forms during onboarding.
+              </p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-gray-200 p-5">
+                  <p className="text-sm font-semibold text-black">
+                    SMS (US) — A2P 10DLC registration
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-sm text-gray-600">
+                    <li>
+                      <span className="font-medium text-black">$4</span>{" "}
+                      one-time brand registration{" "}
+                      <span className="text-gray-400">
+                        ($40 if Sole Proprietor)
+                      </span>
+                    </li>
+                    <li>
+                      <span className="font-medium text-black">$15</span>{" "}
+                      one-time campaign vetting
+                    </li>
+                    <li>
+                      <span className="font-medium text-black">$10</span> /mo
+                      per active campaign
+                    </li>
+                    <li className="text-gray-500">
+                      Approval typically 1–3 business days; required by
+                      AT&T, T-Mobile and Verizon.
+                    </li>
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-gray-200 p-5">
+                  <p className="text-sm font-semibold text-black">
+                    WhatsApp Business — Meta verification
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-sm text-gray-600">
+                    <li>
+                      <span className="font-medium text-black">Free</span>{" "}
+                      Meta Business verification{" "}
+                      <span className="text-gray-400">(1–3 weeks)</span>
+                    </li>
+                    <li>
+                      Need a phone number not on consumer WhatsApp and a
+                      legitimate business presence Meta can verify.
+                    </li>
+                    <li>
+                      Pay-per-conversation:{" "}
+                      <span className="font-medium text-black">
+                        ~$0.01–$0.09
+                      </span>{" "}
+                      per US session, billed by Meta via Twilio.
+                    </li>
+                    <li className="text-gray-500">
+                      Voice-only customers can skip both — phone agents
+                      work on day one.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6 sm:p-8">
               <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
@@ -1001,6 +1071,14 @@ export default function HomePage() {
                 {
                   q: "Can it do outbound too?",
                   a: "Yes. Outbound campaigns, lead follow-up, reminders, and voicemail drop are built in.",
+                },
+                {
+                  q: "Why does sending SMS need extra registration?",
+                  a: "US carriers (AT&T, T-Mobile, Verizon) require A2P 10DLC business registration before any platform — ours included — can send SMS to US numbers. You pay this directly through Twilio: about $4 one-time brand registration ($40 if you're a Sole Proprietor), $15 one-time campaign vetting, and $10/month per active campaign. Approval usually lands in 1–3 business days. Voice-only customers don't need this. We walk you through every form during onboarding.",
+                },
+                {
+                  q: "What about WhatsApp Business?",
+                  a: "WhatsApp requires Meta to verify your business — free, but typically takes 1–3 weeks. You'll need a phone number that isn't currently on consumer WhatsApp and a real business presence Meta can match against (a website, Google Business profile, or LinkedIn). Once verified, conversations are billed per session by Meta through Twilio (roughly $0.01–$0.09 per US conversation depending on category). We help you submit the verification and pick a number that qualifies.",
                 },
                 {
                   q: "Will it sound robotic?",
