@@ -54,7 +54,13 @@ export async function GET() {
       priceCurrency: null as string | null,
       priceRecurring: null as string | null,
       testerPromoActive: false as boolean,
-      testerCouponOff: null as number | null,
+      testerPromoCode: null as string | null,
+      testerCouponId: null as string | null,
+      testerCouponValid: false as boolean,
+      testerCouponAmountOff: null as number | null,
+      testerCouponPercentOff: null as number | null,
+      testerCouponDuration: null as string | null,
+      testerCouponAppliesToProducts: null as string[] | null,
       error: null as string | null,
     },
   };
@@ -69,13 +75,29 @@ export async function GET() {
       report.stripe.priceRecurring = price.recurring?.interval || null;
     }
 
-    const promos = await stripe.promotionCodes.list({ code: "TESTER", limit: 1 });
+    // Look up the live TESTER promotion. The Stripe promotion code object
+    // has `coupon` directly on it (not nested under `.promotion`). Earlier
+    // versions of this file read the wrong path and always returned null,
+    // making the admin page lie about coupon health.
+    const promos = await stripe.promotionCodes.list({
+      code: "TESTER",
+      active: true,
+      limit: 1,
+    });
     const promo = promos.data[0];
     if (promo) {
       report.stripe.testerPromoActive = promo.active;
-      const c = promo.promotion?.coupon;
-      const coupon = c && typeof c !== "string" ? c : null;
-      report.stripe.testerCouponOff = coupon?.amount_off ?? null;
+      report.stripe.testerPromoCode = promo.code;
+      const coupon = promo.coupon;
+      if (coupon) {
+        report.stripe.testerCouponId = coupon.id;
+        report.stripe.testerCouponValid = coupon.valid;
+        report.stripe.testerCouponAmountOff = coupon.amount_off ?? null;
+        report.stripe.testerCouponPercentOff = coupon.percent_off ?? null;
+        report.stripe.testerCouponDuration = coupon.duration ?? null;
+        report.stripe.testerCouponAppliesToProducts =
+          coupon.applies_to?.products ?? null;
+      }
     }
   } catch (err) {
     report.stripe.error = err instanceof Error ? err.message : String(err);
