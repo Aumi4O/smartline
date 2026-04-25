@@ -75,20 +75,27 @@ export async function GET() {
       report.stripe.priceRecurring = price.recurring?.interval || null;
     }
 
-    // Look up the live TESTER promotion. The Stripe promotion code object
-    // has `coupon` directly on it (not nested under `.promotion`). Earlier
-    // versions of this file read the wrong path and always returned null,
-    // making the admin page lie about coupon health.
+    // In Stripe SDK v22 the PromotionCode type nests the coupon as
+    // `promo.promotion.coupon`, typed `string | Stripe.Coupon | null`.
+    // By default the list endpoint returns just the coupon ID string, so
+    // we have to ask Stripe to expand it — otherwise the admin page can't
+    // see amount_off / percent_off / applies_to. (The earlier version of
+    // this code read `promo.promotion?.coupon` *without* expansion, so
+    // `coupon` was always a string and `typeof c !== "string"` filtered it
+    // to null. testerCouponOff therefore lied even when the promo was fine.)
     const promos = await stripe.promotionCodes.list({
       code: "TESTER",
       active: true,
       limit: 1,
+      expand: ["data.promotion.coupon"],
     });
     const promo = promos.data[0];
     if (promo) {
       report.stripe.testerPromoActive = promo.active;
       report.stripe.testerPromoCode = promo.code;
-      const coupon = promo.coupon;
+      const couponField = promo.promotion?.coupon;
+      const coupon =
+        couponField && typeof couponField !== "string" ? couponField : null;
       if (coupon) {
         report.stripe.testerCouponId = coupon.id;
         report.stripe.testerCouponValid = coupon.valid;
