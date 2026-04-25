@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 
 interface OnboardingStep {
   id: string;
@@ -114,8 +114,11 @@ export function OnboardingWizard({ activated, hasAgent, hasPhone, hasProfile }: 
                 </div>
               </div>
               {!step.done && (
-                <Link href={step.href}>
-                  <Button size="sm">{step.cta}</Button>
+                <Link
+                  href={step.href}
+                  className={buttonClasses({ size: "sm" })}
+                >
+                  {step.cta}
                 </Link>
               )}
             </div>

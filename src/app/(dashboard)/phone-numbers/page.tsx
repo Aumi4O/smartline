@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface PhoneNumber {
@@ -127,8 +127,14 @@ export default function PhoneNumbersPage() {
                   A phone number only makes sense when it&apos;s attached to an agent that can
                   answer the call.
                 </p>
-                <Link href="/agents/new" className="mt-3 inline-block">
-                  <Button size="sm">Create an agent</Button>
+                <Link
+                  href="/agents/new"
+                  className={buttonClasses({
+                    size: "sm",
+                    className: "mt-3",
+                  })}
+                >
+                  Create an agent
                 </Link>
               </div>
             ) : (
@@ -237,8 +243,11 @@ export default function PhoneNumbersPage() {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <a href={`tel:${n.phoneNumber}`}>
-                          <Button size="sm">Call now</Button>
+                        <a
+                          href={`tel:${n.phoneNumber}`}
+                          className={buttonClasses({ size: "sm" })}
+                        >
+                          Call now
                         </a>
                         <Button
                           variant="ghost"

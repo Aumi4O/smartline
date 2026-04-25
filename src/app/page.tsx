@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import {
   START_LOGIN_HREF,
   getHearItTalkHref,
@@ -92,11 +92,14 @@ export default function HomePage() {
             <a href="#faq" className="transition-colors hover:text-black">FAQ</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Sign In</Button>
+            <Link
+              href="/login"
+              className={buttonClasses({ variant: "ghost", size: "sm" })}
+            >
+              Sign In
             </Link>
-            <a href={START_LOGIN_HREF}>
-              <Button size="sm">Start for $5</Button>
+            <a href={START_LOGIN_HREF} className={buttonClasses({ size: "sm" })}>
+              Start for $5
             </a>
           </div>
         </div>
@@ -136,10 +139,14 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href={START_LOGIN_HREF} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Start for $5 →
-                </Button>
+              <a
+                href={START_LOGIN_HREF}
+                className={buttonClasses({
+                  size: "lg",
+                  className: "w-full sm:w-auto",
+                })}
+              >
+                Start for $5 →
               </a>
               <a href={hearHref} className={hearClass}>
                 Hear It Talk
@@ -569,8 +576,11 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex justify-center">
-              <a href={START_LOGIN_HREF}>
-                <Button size="lg">Start for $5 — 3 days full access</Button>
+              <a
+                href={START_LOGIN_HREF}
+                className={buttonClasses({ size: "lg" })}
+              >
+                Start for $5 — 3 days full access
               </a>
             </div>
           </div>
@@ -629,8 +639,11 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <a href={START_LOGIN_HREF} className="mt-6 block">
-                  <Button className="w-full">Activate now</Button>
+                <a
+                  href={START_LOGIN_HREF}
+                  className={buttonClasses({ className: "mt-6 w-full" })}
+                >
+                  Activate now
                 </a>
               </div>
 
@@ -668,10 +681,14 @@ export default function HomePage() {
                   ))}
                 </ul>
 
-                <a href={START_LOGIN_HREF} className="mt-6 block">
-                  <Button className="w-full bg-white text-black hover:bg-gray-100">
-                    Start for $5 →
-                  </Button>
+                <a
+                  href={START_LOGIN_HREF}
+                  className={buttonClasses({
+                    className:
+                      "mt-6 w-full bg-white text-black hover:bg-gray-100",
+                  })}
+                >
+                  Start for $5 →
                 </a>
                 <p className="mt-2 text-center text-xs text-gray-400">
                   Pay $5 now · Pro auto-starts day 4
@@ -735,8 +752,11 @@ export default function HomePage() {
             </div>
 
             <div className="mt-12 flex flex-col items-center gap-3">
-              <a href={START_LOGIN_HREF}>
-                <Button size="lg">Start for $5 — 3 days full access</Button>
+              <a
+                href={START_LOGIN_HREF}
+                className={buttonClasses({ size: "lg" })}
+              >
+                Start for $5 — 3 days full access
               </a>
               <p className="text-xs text-gray-500">
                 $5 today · $199/mo auto-starts on day 4 · cancel anytime before to owe nothing more.
@@ -1047,10 +1067,14 @@ export default function HomePage() {
             </div>
 
             <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href={START_LOGIN_HREF} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Start for $5
-                </Button>
+              <a
+                href={START_LOGIN_HREF}
+                className={buttonClasses({
+                  size: "lg",
+                  className: "w-full sm:w-auto",
+                })}
+              >
+                Start for $5
               </a>
               <a href={hearHref} className={hearClass}>
                 Hear It Talk

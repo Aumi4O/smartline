@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 
 interface Agent {
@@ -46,8 +46,8 @@ export default function AgentsPage() {
           <h1 className="text-2xl font-semibold text-black">Agents</h1>
           <p className="mt-1 text-gray-500">Create and manage your AI voice agents.</p>
         </div>
-        <Link href="/agents/new">
-          <Button>Create Agent</Button>
+        <Link href="/agents/new" className={buttonClasses()}>
+          Create Agent
         </Link>
       </div>
 
@@ -58,8 +58,11 @@ export default function AgentsPage() {
           <CardContent className="py-16 text-center">
             <p className="text-gray-500">No agents yet.</p>
             <p className="mt-1 text-sm text-gray-400">Create your first agent to start receiving calls.</p>
-            <Link href="/agents/new">
-              <Button className="mt-4">Create Your First Agent</Button>
+            <Link
+              href="/agents/new"
+              className={buttonClasses({ className: "mt-4" })}
+            >
+              Create Your First Agent
             </Link>
           </CardContent>
         </Card>
@@ -75,8 +78,14 @@ export default function AgentsPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/agents/${agent.id}`}>
-                    <Button variant="secondary" size="sm">Edit</Button>
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className={buttonClasses({
+                      variant: "secondary",
+                      size: "sm",
+                    })}
+                  >
+                    Edit
                   </Link>
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(agent.id)}>
                     Delete

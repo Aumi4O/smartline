@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 
 interface Campaign {
@@ -41,8 +41,8 @@ export default function CampaignsPage() {
           <h1 className="text-2xl font-semibold text-black">Campaigns</h1>
           <p className="mt-1 text-gray-500">Create outbound calling campaigns to reach your leads.</p>
         </div>
-        <Link href="/campaigns/new">
-          <Button>New Campaign</Button>
+        <Link href="/campaigns/new" className={buttonClasses()}>
+          New Campaign
         </Link>
       </div>
 
@@ -55,8 +55,11 @@ export default function CampaignsPage() {
             <p className="mt-1 text-sm text-gray-400">
               Create a campaign to have your AI agent call leads automatically.
             </p>
-            <Link href="/campaigns/new" className="mt-4 inline-block">
-              <Button>Create Your First Campaign</Button>
+            <Link
+              href="/campaigns/new"
+              className={buttonClasses({ className: "mt-4" })}
+            >
+              Create Your First Campaign
             </Link>
           </CardContent>
         </Card>

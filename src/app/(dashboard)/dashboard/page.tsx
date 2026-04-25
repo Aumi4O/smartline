@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { agents, phoneNumbers, conversations, businessProfiles } from "@/lib/db/schema";
 import { eq, and, gte, count, sql } from "drizzle-orm";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 import { ActivateButton } from "@/components/billing/activate-button";
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
@@ -147,17 +147,26 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Link href="/agents/new">
-                <Button>Create Agent</Button>
+              <Link href="/agents/new" className={buttonClasses()}>
+                Create Agent
               </Link>
-              <Link href="/phone-numbers">
-                <Button variant="secondary">Get Phone Number</Button>
+              <Link
+                href="/phone-numbers"
+                className={buttonClasses({ variant: "secondary" })}
+              >
+                Get Phone Number
               </Link>
-              <Link href="/knowledge">
-                <Button variant="secondary">Business Info</Button>
+              <Link
+                href="/knowledge"
+                className={buttonClasses({ variant: "secondary" })}
+              >
+                Business Info
               </Link>
-              <Link href="/billing">
-                <Button variant="secondary">Buy Credits</Button>
+              <Link
+                href="/billing"
+                className={buttonClasses({ variant: "secondary" })}
+              >
+                Buy Credits
               </Link>
             </div>
           </CardContent>
@@ -213,8 +222,11 @@ export default async function DashboardPage() {
                 <CardTitle>Usage This Month</CardTitle>
                 <CardDescription>Credit consumption (30 days)</CardDescription>
               </div>
-              <Link href="/analytics">
-                <Button variant="ghost" size="sm">View Analytics →</Button>
+              <Link
+                href="/analytics"
+                className={buttonClasses({ variant: "ghost", size: "sm" })}
+              >
+                View Analytics →
               </Link>
             </div>
           </CardHeader>

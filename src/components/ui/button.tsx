@@ -13,6 +13,28 @@ const sizes = {
   lg: "h-12 px-6 text-base",
 } as const;
 
+const baseButtonClasses =
+  "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
+
+/**
+ * Returns the same class string the <Button> component would render.
+ * Use this when you need to style a <Link> or <a> as a button — never
+ * wrap a <Button> inside an <a>/<Link>, because nesting an interactive
+ * <button> inside an anchor is invalid HTML and breaks tap-to-navigate
+ * on iOS Safari (the inner button swallows the touch and the anchor
+ * never fires). This was the root cause of the broken mobile "Sign In"
+ * header link. Always do:
+ *   <Link className={buttonClasses({ variant: "ghost", size: "sm" })}>...
+ */
+export function buttonClasses(opts: {
+  variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
+  className?: string;
+} = {}) {
+  const { variant = "primary", size = "md", className } = opts;
+  return cn(baseButtonClasses, variants[variant], sizes[size], className);
+}
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants;
   size?: keyof typeof sizes;
@@ -22,12 +44,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => (
     <button
       ref={ref}
-      className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
-        variants[variant],
-        sizes[size],
-        className
-      )}
+      className={buttonClasses({ variant, size, className })}
       {...props}
     />
   )
