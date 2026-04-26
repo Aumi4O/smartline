@@ -34,7 +34,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-black">4. Billing and Payment</h2>
-            <p>A one-time activation deposit of $5.00 USD is required to activate your account. This deposit is converted into usage credits. Usage is billed on a pay-as-you-go basis and deducted from your credit balance. Credits are non-refundable. Optional Pro subscriptions are billed monthly at $199/month and can be cancelled at any time. Prices may change with 30 days notice.</p>
+            <p>To activate the platform you load a one-time $5.00 USD starter credit pack. The full $5 is credited to your account as usage credits — it is not a service fee or activation fee paid to SmartLine. Usage (voice minutes, SMS, phone numbers, API) is billed on a pay-as-you-go basis and deducted from your credit balance. Credits are non-refundable but expire only on account closure. The optional Pro subscription is billed separately at $199/month and can be cancelled at any time. Prices may change with 30 days notice.</p>
           </section>
 
           <section>

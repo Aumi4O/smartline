@@ -154,7 +154,7 @@ export default function HomePage() {
             </div>
 
             <p className="mt-4 text-sm text-gray-500">
-              $5 today unlocks full access for 3 days. Then $199/mo — cancel anytime.
+              The $5 is a starter credit pack — every cent is yours to spend on calls, SMS and API. Unlocks full access for 3 days. Pro auto-starts at $199/mo on day 4 — cancel anytime.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400">
@@ -169,7 +169,7 @@ export default function HomePage() {
 
             {/* Mini pricing strip — above the fold, shows the full billing flow */}
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
-              {/* Step 1 — $5 today */}
+              {/* Step 1 — $5 starter credits */}
               <a
                 href={START_LOGIN_HREF}
                 className="group flex items-center justify-between gap-4 rounded-xl border-2 bg-white p-4 text-left transition-shadow hover:shadow-sm"
@@ -183,9 +183,9 @@ export default function HomePage() {
                     Today
                   </p>
                   <p className="mt-1 text-xl font-semibold text-black">
-                    $5 <span className="text-xs font-normal text-gray-400">activation</span>
+                    $5 <span className="text-xs font-normal text-gray-400">starter credits</span>
                   </p>
-                  <p className="text-[11px] text-gray-500">Unlocks platform · 3 days full access</p>
+                  <p className="text-[11px] text-gray-500">Spent on your usage · unlocks platform · 3 days full access</p>
                 </div>
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5"
@@ -355,7 +355,7 @@ export default function HomePage() {
             <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
               <div className="space-y-3">
                 {[
-                  "You activate the platform.",
+                  "You load $5 of starter credits.",
                   "You add your business details.",
                   "You choose a voice.",
                   "You connect your number.",
@@ -488,8 +488,8 @@ export default function HomePage() {
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {[
-                { n: "1", t: "Start with a small real payment." },
-                { n: "2", t: "Use real credits." },
+                { n: "1", t: "Load $5 of starter credits." },
+                { n: "2", t: "Spend them on your own usage." },
                 { n: "3", t: "See it work in your own business." },
                 { n: "4", t: "Keep it only if it earns its place." },
               ].map((item) => (
@@ -602,12 +602,11 @@ export default function HomePage() {
             </div>
 
             <p className="mx-auto mt-4 max-w-[560px] text-center text-gray-600">
-              One simple flow: $5 today, 3 days full access, then $199/mo — with usage billed on
-              top of whatever your agent actually does.
+              One simple flow: load $5 of starter credits today (yours to spend on usage), get 3 days of full access, then $199/mo Pro — with usage billed from your credit balance.
             </p>
 
             <div className="mt-14 grid gap-6 md:grid-cols-3">
-              {/* Step 1 — Activation */}
+              {/* Step 1 — Starter credits */}
               <div className="rounded-2xl border-2 p-7" style={{ borderColor: ACCENT }}>
                 <div className="flex items-baseline justify-between">
                   <p className="text-xs font-semibold uppercase tracking-widest text-black">
@@ -621,16 +620,16 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="mt-4 text-5xl font-semibold tracking-tight">
-                  $5<span className="text-lg font-normal text-gray-400"> activation</span>
+                  $5<span className="text-lg font-normal text-gray-400"> starter credits</span>
                 </p>
                 <p className="mt-2 text-sm text-gray-600">
-                  Unlocks the platform immediately and gives you 3 days of full Pro access.
+                  Not a fee — a $5 credit pack you spend on your own calls, SMS and API. Unlocks the platform immediately and gives you 3 days of full Pro access.
                 </p>
                 <ul className="mt-6 space-y-2.5 text-sm text-gray-600">
                   {[
-                    "One-time charge, billed today.",
+                    "Every cent lands as usage credits in your account.",
+                    "Spent only when your agent makes calls or sends SMS.",
                     "Full Pro capabilities for 72 hours.",
-                    "Converts to credits you can use on usage.",
                     "No surprise charges during the window.",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
@@ -643,7 +642,7 @@ export default function HomePage() {
                   href={START_LOGIN_HREF}
                   className={buttonClasses({ className: "mt-6 w-full" })}
                 >
-                  Activate now
+                  Load $5 in credits
                 </a>
               </div>
 
@@ -691,7 +690,7 @@ export default function HomePage() {
                   Start for $5 →
                 </a>
                 <p className="mt-2 text-center text-xs text-gray-400">
-                  Pay $5 now · Pro auto-starts day 4
+                  Load $5 starter credits now · Pro auto-starts day 4
                 </p>
               </div>
 
@@ -829,7 +828,7 @@ export default function HomePage() {
                 Start for $5 — 3 days full access
               </a>
               <p className="text-xs text-gray-500">
-                $5 today · $199/mo auto-starts on day 4 · cancel anytime before to owe nothing more.
+                $5 starter credits today (yours to spend) · $199/mo auto-starts on day 4 · cancel anytime before to owe nothing more.
               </p>
             </div>
           </div>
@@ -885,12 +884,12 @@ export default function HomePage() {
                 <p className="mt-2 font-semibold text-black">Is different.</p>
                 <ul className="mt-5 space-y-3 text-sm text-gray-700">
                   {[
-                    "Live in minutes.",
-                    "Self-serve from the first click.",
-                    "Outbound included.",
-                    "Forward your number or port it.",
-                    "$5 today, $199/mo starting day 4.",
-                    "Cancel anytime · no contract.",
+                  "Live in minutes.",
+                  "Self-serve from the first click.",
+                  "Outbound included.",
+                  "Forward your number or port it.",
+                  "$5 starter credits today (you spend them), $199/mo starting day 4.",
+                  "Cancel anytime · no contract.",
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2.5">
                       <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
@@ -1053,16 +1052,20 @@ export default function HomePage() {
             <div className="mt-10 divide-y divide-gray-200 rounded-2xl border border-gray-200 bg-white">
               {[
                 {
-                  q: "What exactly does the $5 do?",
-                  a: "It charges $5 today, unlocks the platform immediately, and gives you 3 days of full Pro access. That $5 also becomes usage credits you can spend on voice minutes, SMS or phone numbers.",
+                  q: "Is the $5 a fee? What does it actually pay for?",
+                  a: "It is not a fee. The $5 is a starter credit pack — every cent lands in your account as usage credits and is only spent when your agent makes calls, sends SMS or hits the API. We don't keep it. Loading credits also unlocks the platform and gives you 3 days of full Pro access.",
+                },
+                {
+                  q: "So what does SmartLine actually charge me?",
+                  a: "Nothing for the $5 itself — that money is yours, sitting as credits. The only thing SmartLine charges is the $199/mo Pro subscription that auto-starts on day 4 (skip it by cancelling inside the 3-day window). Usage like voice minutes and SMS is then deducted from your credit balance at cost plus a small margin.",
                 },
                 {
                   q: "When am I billed the $199/month?",
-                  a: "On day 4, right after the 3-day window ends. The subscription is month to month from there. You can cancel inside the 3-day window and you are never billed the $199. Launch testers: enter code TESTER at Stripe Checkout for $150 off your first month ($49 instead of $199). The $5 activation stays $5.",
+                  a: "On day 4, right after the 3-day window ends. The subscription is month to month from there. You can cancel inside the 3-day window and you are never billed the $199. Launch testers: enter code TESTER at Stripe Checkout for $150 off your first month ($49 instead of $199). Your $5 starter credits stay $5.",
                 },
                 {
                   q: "Is there a longer free trial?",
-                  a: "No. We keep it to 3 days on purpose \u2014 long enough to prove it works on a real phone line, short enough that we aren\u2019t pretending the product is free. That\u2019s why the $5 exists.",
+                  a: "No. We keep it to 3 days on purpose \u2014 long enough to prove it works on a real phone line, short enough that we aren\u2019t pretending the product is free. The $5 starter credits are how you actually run the test on real calls.",
                 },
                 {
                   q: "Can I keep my current number?",
@@ -1136,8 +1139,8 @@ export default function HomePage() {
             </div>
 
             <div className="mt-10 space-y-2 text-lg text-gray-600">
-              <p>Start for $5.</p>
-              <p>Use real credits.</p>
+              <p>Load $5 of starter credits.</p>
+              <p>Spend them on your own real calls.</p>
               <p>See how it handles your business.</p>
               <p>
                 <span className="font-medium text-black">Keep it because it works.</span>

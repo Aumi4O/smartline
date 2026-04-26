@@ -7,11 +7,13 @@ import { PLANS, ACTIVATION_AMOUNT_CENTS, PRO_TRIAL_DAYS } from "@/lib/pricing";
  *
  * - No login, no email form on our side.
  * - Stripe's hosted page collects the email and the card.
- * - Creates a subscription Checkout: $199/mo Pro (with a 3-day trial) + a
- *   one-time $5 activation line. That matches our headline offer:
- *     "$5 today → 3 days full access → $199/mo auto-starts on day 4"
+ * - Creates a subscription Checkout: $199/mo Pro (with a 3-day trial) +
+ *   a one-time $5 STARTER CREDIT PACK line. The $5 is not a fee — it
+ *   lands as usage credits in the customer's account and is spent on
+ *   their own calls/SMS/API. That matches our headline offer:
+ *     "$5 starter credits today → 3 days full access → $199/mo auto-starts on day 4"
  * - Promotion codes are enabled so the TESTER code works ($150 off the
- *   first month — does not discount the $5 activation).
+ *   first month — does not discount the $5 starter credits).
  * - On success we land on /welcome?session_id={ID} which fetches the email
  *   from Stripe and auto-sends a magic sign-in link.
  *
@@ -86,9 +88,9 @@ async function handle(req: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Activation — $5 usage credits",
+              name: "$5 starter credits (not a fee)",
               description:
-                "One-time today. Credited to your account balance when you land on the dashboard.",
+                "Loaded as usage credits in your SmartLine account. Spent only on your own calls, SMS and API usage. Yours to keep.",
             },
             unit_amount: ACTIVATION_AMOUNT_CENTS,
           },

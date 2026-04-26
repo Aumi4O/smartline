@@ -94,11 +94,11 @@ function WelcomeContent() {
       </div>
 
       <h1 className="mt-6 text-3xl font-semibold tracking-tight text-black">
-        {sessionId ? "Payment received" : "Welcome to SmartLine"}
+        {sessionId ? "Credits loaded" : "Welcome to SmartLine"}
       </h1>
       <p className="mt-3 text-gray-600">
         {sessionId
-          ? "Your $5 is charged and your agent is unlocked."
+          ? "$5 of usage credits are now in your account. Your agent is unlocked — every cent is yours to spend on calls, SMS and API."
           : "Enter your email and we'll send you a one-click sign-in link."}
       </p>
 

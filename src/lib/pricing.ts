@@ -2,14 +2,20 @@
  * SmartLine pricing — all amounts in cents.
  * Usage prices include a 20% platform markup over raw provider costs.
  *
- * ACTIVATION MODEL:
- *   - Checkout charges $5 once (credits) + starts Pro at $199/mo with a 3-day trial.
- *   - After the trial, Stripe bills $199/mo; usage is on top of credits.
- *   - Cancel in the Customer Portal before trial ends to avoid the first $199.
+ * STARTER CREDITS MODEL:
+ *   - Checkout loads a $5 starter credit pack (NOT a service fee — every
+ *     cent lands in the org's credit balance and is spent only on
+ *     calls / SMS / API usage).
+ *   - Loading credits also kicks off a 3-day Pro trial; Pro auto-starts
+ *     at $199/mo on day 4.
+ *   - Cancel in the Customer Portal before trial ends to avoid the
+ *     first $199. The $5 starter credits are kept either way.
  */
 
 export const MARKUP = 1.2;
 
+/** Cents loaded as starter usage credits at sign-up. Renamed from
+ *  "activation amount" for clarity — this is not a fee, it is credit. */
 export const ACTIVATION_AMOUNT_CENTS = 500;
 
 /** Pro subscription trial in Checkout (first $199 is after this many days). */

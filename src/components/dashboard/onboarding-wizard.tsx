@@ -29,10 +29,10 @@ export function OnboardingWizard({ activated, hasAgent, hasPhone, hasProfile }: 
   const steps = [
     {
       id: "activate",
-      title: "Activate Account",
-      description: "Pay a $5 deposit to unlock all features (converts to credits).",
+      title: "Load $5 starter credits",
+      description: "Not a fee — a $5 credit pack you spend on calls, SMS and API usage. Unlocks the platform.",
       href: "/billing",
-      cta: "Activate",
+      cta: "Load credits",
       done: activated,
     },
     {

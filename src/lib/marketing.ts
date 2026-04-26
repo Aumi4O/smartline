@@ -7,9 +7,13 @@ import { cn } from "@/lib/utils";
 /**
  * Primary "Start for $5" CTA.
  *
+ * The $5 is a starter credit pack (not a fee) — it lands as usage credits
+ * in the new org's balance and is spent only on calls/SMS/API. Loading it
+ * also unlocks Pro for 3 days, after which Pro auto-starts at $199/mo.
+ *
  * Hard-coded to /api/billing/checkout — a guest-friendly endpoint that
- * creates a Stripe Checkout Session ($5 today + 3-day trial + $199/mo
- * auto-start) and 303-redirects the visitor straight to Stripe.
+ * creates a Stripe Checkout Session and 303-redirects the visitor
+ * straight to Stripe.
  *
  * No email form on our side. Stripe's own page collects the email and the
  * card. On payment, our webhook creates the user+org and emails a magic

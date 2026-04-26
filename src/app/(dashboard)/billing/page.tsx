@@ -104,9 +104,9 @@ export default function BillingPage() {
         {isInactive && (
           <Card>
             <CardHeader>
-              <CardTitle>Activate your account — $5 today</CardTitle>
+              <CardTitle>Load your $5 starter credits</CardTitle>
               <CardDescription>
-                Pay $5 now to unlock full Pro access for 3 days. Auto-renews to $199/mo Pro after day 3 unless you cancel. The $5 converts into usage credits.
+                It&apos;s not a fee — the full $5 becomes usage credits in your account and is spent only when your agent makes calls, sends SMS or hits the API. Loading credits also unlocks Pro for 3 days. Pro auto-starts at $199/mo on day 4 unless you cancel.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -114,7 +114,7 @@ export default function BillingPage() {
                 <ActivateButton />
               </div>
               <p className="mt-3 text-xs text-gray-400">
-                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month.
+                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month. Your $5 starter credits stay $5.
               </p>
             </CardContent>
           </Card>

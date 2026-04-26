@@ -26,32 +26,35 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-black">Welcome to SmartLine</h1>
           <p className="mt-1 text-gray-500">
-            Activate your account to start building AI voice agents.
+            Load your starter credits to start building AI voice agents.
           </p>
         </div>
 
         <Card className="max-w-[480px]">
           <CardHeader>
-            <CardTitle>Activate Your Account</CardTitle>
+            <CardTitle>Load $5 starter credits</CardTitle>
             <CardDescription>
-              Pay a one-time $5 deposit to get started. This converts to $5 in usage credits — nothing is lost.
+              Not a fee. The full $5 lands in your account as usage credits and is spent only when your agent makes calls, sends SMS or hits the API.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2 text-sm text-gray-500">
-                <p>With your $5 you can:</p>
+                <p>What $5 gets you:</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li>Make ~80 minutes of AI voice calls</li>
-                  <li>Send ~250 chat messages</li>
-                  <li>Test your agent end-to-end</li>
+                  <li>~80 minutes of AI voice calls</li>
+                  <li>~250 chat messages</li>
+                  <li>Full end-to-end agent testing</li>
                 </ul>
+                <p className="pt-2 text-xs text-gray-400">
+                  Every cent is yours to spend. Top up anytime.
+                </p>
               </div>
               <div className="border-t border-gray-200 pt-4">
                 <ActivateButton />
               </div>
               <p className="text-xs text-gray-400">
-                No subscription required. Pay-as-you-go. Buy more credits anytime.
+                No subscription required. Pay-as-you-go from your credit balance.
               </p>
             </div>
           </CardContent>
