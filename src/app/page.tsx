@@ -5,6 +5,7 @@ import {
   getHearItTalkHref,
   hearItTalkClassName,
 } from "@/lib/marketing";
+import { HeroVideo } from "@/components/marketing/hero-video";
 
 const ACCENT = "#0066FF";
 
@@ -167,25 +168,9 @@ export default function HomePage() {
               <span>GDPR + TCPA ready</span>
             </div>
 
-            {/* Hero video — silent autoplay loop. The decorative wrapper + soft
-                shadow keep it framed against the gradient background. */}
-            <div className="mx-auto mt-12 max-w-[920px]">
-              <div
-                className="relative overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-[0_30px_80px_-30px_rgba(0,102,255,0.35)]"
-                style={{ aspectRatio: "16 / 9" }}
-              >
-                <video
-                  className="absolute inset-0 h-full w-full object-cover"
-                  src="/smartline-hero.mp4"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  aria-label="SmartLine AI phone agent in action"
-                />
-              </div>
-            </div>
+            {/* Hero video — 9:16 portrait showreel rendered phone-mockup-sized.
+                Autoplays muted (browser policy); a tap on the pill toggles sound. */}
+            <HeroVideo src="/smartline-hero.mp4" />
 
             {/* Mini pricing strip — above the fold, shows the full billing flow */}
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
