@@ -9,6 +9,11 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { IntakeUrlCopy } from "@/components/integrations/intake-url-copy";
+import { CalendlyConnect } from "@/components/integrations/calendly-connect";
+import { GoogleCalendarConnect } from "@/components/integrations/google-calendar-connect";
+import { db } from "@/lib/db";
+import { calendarIntegrations } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +26,23 @@ export default async function IntegrationsPage() {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://smartlineagent.com";
   const intakeUrl = `${baseUrl}/api/public/leads/${token}`;
+
+  const [calendlyRow, googleRow] = await Promise.all([
+    db.query.calendarIntegrations.findFirst({
+      where: and(
+        eq(calendarIntegrations.orgId, org.id),
+        eq(calendarIntegrations.provider, "calendly")
+      ),
+    }),
+    db.query.calendarIntegrations.findFirst({
+      where: and(
+        eq(calendarIntegrations.orgId, org.id),
+        eq(calendarIntegrations.provider, "google")
+      ),
+    }),
+  ]);
+  const calendlyConnected = !!calendlyRow && calendlyRow.status === "active";
+  const googleConnected = !!googleRow && googleRow.status === "active";
 
   const fbExample = JSON.stringify(
     {
@@ -56,6 +78,54 @@ export default async function IntegrationsPage() {
           Make, or any tool that can POST a webhook.
         </p>
       </div>
+
+      <div className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
+          Scheduling
+        </h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Calendly</CardTitle>
+              <CardDescription>
+                Your AI agent texts callers your Calendly link. Bookings sync
+                back here automatically via webhook.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CalendlyConnect
+                initialConnected={calendlyConnected}
+                schedulingUrl={calendlyRow?.calendlySchedulingUrl}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Google Calendar</CardTitle>
+              <CardDescription>
+                Sync events from your primary Google Calendar so they appear
+                on the Appointments page alongside Calendly bookings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GoogleCalendarConnect
+                initialConnected={googleConnected}
+                email={googleRow?.googleAccountEmail}
+                watchExpiresAt={
+                  googleRow?.googleWatchExpiresAt
+                    ? googleRow.googleWatchExpiresAt.toISOString()
+                    : null
+                }
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
+        Lead intake
+      </h2>
 
       <Card className="mb-6">
         <CardHeader>

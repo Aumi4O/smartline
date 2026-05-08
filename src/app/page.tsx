@@ -167,6 +167,26 @@ export default function HomePage() {
               <span>GDPR + TCPA ready</span>
             </div>
 
+            {/* Hero video — silent autoplay loop. The decorative wrapper + soft
+                shadow keep it framed against the gradient background. */}
+            <div className="mx-auto mt-12 max-w-[920px]">
+              <div
+                className="relative overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-[0_30px_80px_-30px_rgba(0,102,255,0.35)]"
+                style={{ aspectRatio: "16 / 9" }}
+              >
+                <video
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src="/smartline-hero.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-label="SmartLine AI phone agent in action"
+                />
+              </div>
+            </div>
+
             {/* Mini pricing strip — above the fold, shows the full billing flow */}
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
               {/* Step 1 — $5 starter credits */}
@@ -402,7 +422,7 @@ export default function HomePage() {
                     "Know your business from your profile, documents, or website.",
                     "Qualify leads.",
                     "Answer common questions.",
-                    "Book appointments.",
+                    "Book appointments — syncs with Calendly and Google Calendar.",
                     "Transfer to a human when needed.",
                     "Record, transcribe, and summarize every call automatically.",
                   ].map((item) => (
@@ -510,6 +530,37 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+
+            {/* Integrations strip — booked time has to land somewhere your team
+                already lives. Calendly + Google Calendar are wired in. */}
+            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p
+                    className="text-[10px] font-semibold uppercase tracking-widest"
+                    style={{ color: ACCENT }}
+                  >
+                    Integrations
+                  </p>
+                  <p className="mt-1 text-base font-medium text-black">
+                    Bookings land where your team already lives.
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Connect Calendly and Google Calendar in one click. The agent
+                    texts callers your booking link; confirmed appointments sync
+                    back into SmartLine automatically.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-black">
+                    Calendly
+                  </span>
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-black">
+                    Google Calendar
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -543,7 +594,7 @@ export default function HomePage() {
                 {
                   n: "03",
                   title: "Give it tools",
-                  desc: "Let it book, send SMS, transfer calls, or use your knowledge base.",
+                  desc: "Let it book into Calendly, sync with Google Calendar, send SMS, transfer calls, or use your knowledge base.",
                 },
                 {
                   n: "04",

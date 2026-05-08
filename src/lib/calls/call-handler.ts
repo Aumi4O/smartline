@@ -77,6 +77,22 @@ function buildToolDefinitions(agentId: string) {
         required: ["reason"],
       },
     },
+    {
+      type: "function" as const,
+      name: "share_booking_link",
+      description:
+        "Text the caller a link to book an appointment. Use when the caller wants to schedule, book, reserve, or set up a time. After calling, briefly tell the caller you've texted them the link.",
+      parameters: {
+        type: "object",
+        properties: {
+          note: {
+            type: "string",
+            description: "Optional short note to include with the SMS (e.g. service requested).",
+          },
+        },
+        required: [],
+      },
+    },
   ];
 }
 

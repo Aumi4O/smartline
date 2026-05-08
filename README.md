@@ -29,6 +29,30 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Calendar integrations (Calendly + Google Calendar)
+
+SmartLine can sync bookings from Calendly and Google Calendar into the
+Appointments dashboard, and the realtime voice agent can text callers a
+Calendly link via a `share_booking_link` tool.
+
+Required env vars (see `.env.example`):
+
+- `SECRETS_ENCRYPTION_KEY` — 64 hex chars, used to encrypt OAuth tokens and
+  the Calendly PAT/webhook signing key at rest.
+- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` — OAuth client from
+  the Google Cloud Console with the redirect URI set to
+  `${NEXT_PUBLIC_APP_URL}/api/integrations/google/callback`.
+- `GOOGLE_OAUTH_REDIRECT_URI` — optional override of the redirect URI.
+
+After configuring env vars, apply the new database migration
+(`drizzle/0001_calendar_bookings.sql`), then visit **Dashboard → Integrations**
+and connect Calendly (paste a Personal Access Token) and/or Google Calendar
+(OAuth). Bookings flow into **Dashboard → Appointments** via:
+
+- Calendly webhooks (`/api/webhooks/calendly`, HMAC-verified)
+- Google Calendar push notifications (`/api/webhooks/google-calendar`,
+  incremental `events.list` with persisted sync token)
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
