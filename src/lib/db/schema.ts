@@ -315,6 +315,78 @@ export const leads = pgTable("leads", {
 ]);
 
 // ============================================================
+// CALENDAR INTEGRATIONS + APPOINTMENTS
+// ============================================================
+export const calendarIntegrations = pgTable("calendar_integrations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id),
+  provider: text("provider").notNull(),
+  status: text("status").notNull().default("active"),
+
+  // OAuth / token storage (AES-256-GCM ciphertext via src/lib/crypto/secrets.ts).
+  accessTokenCiphertext: text("access_token_ciphertext"),
+  refreshTokenCiphertext: text("refresh_token_ciphertext"),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+
+  // Calendly-specific.
+  calendlyUserUri: text("calendly_user_uri"),
+  calendlySchedulingUrl: text("calendly_scheduling_url"),
+  calendlyWebhookSigningKey: text("calendly_webhook_signing_key"),
+  calendlyWebhookUri: text("calendly_webhook_uri"),
+
+  // Google Calendar-specific.
+  googleAccountEmail: text("google_account_email"),
+  googleCalendarId: text("google_calendar_id").default("primary"),
+  googleWatchChannelId: text("google_watch_channel_id"),
+  googleWatchResourceId: text("google_watch_resource_id"),
+  googleWatchExpiresAt: timestamp("google_watch_expires_at", { withTimezone: true }),
+  googleSyncToken: text("google_sync_token"),
+
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("calendar_integrations_org_provider").on(table.orgId, table.provider),
+  index("idx_calendar_integrations_channel").on(table.googleWatchChannelId),
+]);
+
+export const appointments = pgTable("appointments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id),
+  integrationId: uuid("integration_id").notNull().references(() => calendarIntegrations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  externalEventId: text("external_event_id").notNull(),
+  externalEventUri: text("external_event_uri"),
+
+  leadId: uuid("lead_id"),
+  conversationId: uuid("conversation_id"),
+
+  title: text("title"),
+  description: text("description"),
+  status: text("status").notNull().default("confirmed"),
+
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  timezone: text("timezone"),
+
+  attendeeName: text("attendee_name"),
+  attendeeEmail: text("attendee_email"),
+  attendeePhone: text("attendee_phone"),
+  location: text("location"),
+  joinUrl: text("join_url"),
+  cancelUrl: text("cancel_url"),
+  rescheduleUrl: text("reschedule_url"),
+
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("appointments_provider_event").on(table.provider, table.externalEventId),
+  index("idx_appointments_org_starts").on(table.orgId, table.startsAt),
+  index("idx_appointments_lead").on(table.leadId),
+]);
+
+// ============================================================
 // COMPLIANCE: CONSENT + AUDIT
 // ============================================================
 export const consentRecords = pgTable("consent_records", {
@@ -377,6 +449,8 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   consentRecords: many(consentRecords),
   auditLogs: many(auditLogs),
   webhookEndpoints: many(webhookEndpoints),
+  calendarIntegrations: many(calendarIntegrations),
+  appointments: many(appointments),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -418,4 +492,16 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
 export const leadsRelations = relations(leads, ({ one }) => ({
   organization: one(organizations, { fields: [leads.orgId], references: [organizations.id] }),
   campaign: one(campaigns, { fields: [leads.campaignId], references: [campaigns.id] }),
+}));
+
+export const calendarIntegrationsRelations = relations(calendarIntegrations, ({ one, many }) => ({
+  organization: one(organizations, { fields: [calendarIntegrations.orgId], references: [organizations.id] }),
+  appointments: many(appointments),
+}));
+
+export const appointmentsRelations = relations(appointments, ({ one }) => ({
+  organization: one(organizations, { fields: [appointments.orgId], references: [organizations.id] }),
+  integration: one(calendarIntegrations, { fields: [appointments.integrationId], references: [calendarIntegrations.id] }),
+  lead: one(leads, { fields: [appointments.leadId], references: [leads.id] }),
+  conversation: one(conversations, { fields: [appointments.conversationId], references: [conversations.id] }),
 }));
