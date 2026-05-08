@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { requireOrg } from "@/lib/org";
 import { db } from "@/lib/db";
 import { calendarIntegrations } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { encryptSecret, decryptSecret } from "@/lib/crypto/secrets";
 import {
   getCalendlyMe,
@@ -15,6 +16,7 @@ import { logAuditEvent } from "@/lib/compliance/audit";
 export async function GET() {
   try {
     const { org } = await requireOrg();
+    await ensureCalendarTables();
     const row = await db.query.calendarIntegrations.findFirst({
       where: and(
         eq(calendarIntegrations.orgId, org.id),
@@ -42,6 +44,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { org, session } = await requireOrg();
+    await ensureCalendarTables();
     const body = (await req.json()) as { personalAccessToken?: string };
     const pat = body.personalAccessToken?.trim();
 
@@ -137,6 +140,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   try {
     const { org, session } = await requireOrg();
+    await ensureCalendarTables();
 
     const row = await db.query.calendarIntegrations.findFirst({
       where: and(

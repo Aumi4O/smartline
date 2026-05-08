@@ -8,6 +8,7 @@ import {
   calendarIntegrations,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { searchKnowledge } from "@/lib/knowledge/knowledge-service";
 import { getSubAccountClient } from "@/lib/twilio";
 import { logAuditEvent } from "@/lib/compliance/audit";
@@ -120,6 +121,7 @@ async function handleShareBookingLink(
     };
   }
 
+  await ensureCalendarTables();
   const integration = await db.query.calendarIntegrations.findFirst({
     where: and(
       eq(calendarIntegrations.orgId, conv.orgId),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { calendarIntegrations } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { syncGoogleCalendar } from "@/lib/calendar/google-sync";
 
 /**
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    await ensureCalendarTables();
     const integration = await db.query.calendarIntegrations.findFirst({
       where: eq(calendarIntegrations.googleWatchChannelId, channelId),
     });

@@ -13,6 +13,7 @@ import { CalendlyConnect } from "@/components/integrations/calendly-connect";
 import { GoogleCalendarConnect } from "@/components/integrations/google-calendar-connect";
 import { db } from "@/lib/db";
 import { calendarIntegrations } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { eq, and } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function IntegrationsPage() {
   if (!session?.user?.id) return null;
 
   const org = await getOrCreateOrg(session.user.id, session.user.email!);
+  await ensureCalendarTables();
   const token = generateIntakeToken(org.id);
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://smartlineagent.com";

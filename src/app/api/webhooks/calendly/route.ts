@@ -7,6 +7,7 @@ import {
   appointments,
   leads,
 } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { logAuditEvent } from "@/lib/compliance/audit";
 
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing org" }, { status: 400 });
     }
 
+    await ensureCalendarTables();
     const integration = await db.query.calendarIntegrations.findFirst({
       where: and(
         eq(calendarIntegrations.orgId, orgId),

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { getOrCreateOrg } from "@/lib/org";
 import { db } from "@/lib/db";
 import { appointments } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { eq, and, gte, lt } from "drizzle-orm";
 import {
   Card,
@@ -65,6 +66,7 @@ export default async function AppointmentsPage() {
   if (!session?.user?.id) return null;
 
   const org = await getOrCreateOrg(session.user.id, session.user.email!);
+  await ensureCalendarTables();
   const now = new Date();
 
   const [upcoming, past] = await Promise.all([

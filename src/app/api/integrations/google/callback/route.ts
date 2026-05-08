@@ -3,6 +3,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { calendarIntegrations } from "@/lib/db/schema";
+import { ensureCalendarTables } from "@/lib/db/ensure-calendar-tables";
 import { encryptSecret } from "@/lib/crypto/secrets";
 import {
   exchangeCodeForTokens,
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
     `${appUrl}/api/integrations/google/callback`;
 
   try {
+    await ensureCalendarTables();
     const tokens = await exchangeCodeForTokens({
       clientId,
       clientSecret,
