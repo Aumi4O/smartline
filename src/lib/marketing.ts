@@ -26,14 +26,28 @@ export const START_LOGIN_HREF = "/api/billing/checkout";
 /** Tester promo CTA — auto-applies the TESTER coupon for $150 off first month. */
 export const START_LOGIN_HREF_TESTER = "/api/billing/checkout?promo=TESTER";
 
-/** E.164 demo line for "Hear It Talk" (e.g. +18005551212). If unset, we scroll to #how. */
+/** E.164 demo line for "Hear It Talk" (e.g. +18005551212). If unset, we scroll to #strawberry-demo. */
 export const DEMO_PHONE_E164 = process.env.NEXT_PUBLIC_DEMO_PHONE_E164?.trim() || "";
 
+/**
+ * Public URL of the Strawberry browser demo.
+ * Set NEXT_PUBLIC_STRAWBERRY_VOICE_DEMO_URL to the live Lead Agent Studio demo URL.
+ */
+export const STRAWBERRY_VOICE_DEMO_URL =
+  process.env.NEXT_PUBLIC_STRAWBERRY_VOICE_DEMO_URL?.trim() || "/strawberry-demo.html";
+
 export function getHearItTalkHref(): string {
+  if (STRAWBERRY_VOICE_DEMO_URL) {
+    return "#strawberry-demo";
+  }
   if (DEMO_PHONE_E164) {
     return `tel:${DEMO_PHONE_E164.replace(/\s/g, "")}`;
   }
-  return "#how";
+  return "#strawberry-demo";
+}
+
+export function getStrawberryVoiceDemoUrl(): string {
+  return STRAWBERRY_VOICE_DEMO_URL;
 }
 
 /** Same visual weight as <Button size="lg" variant="secondary" className="w-full sm:w-auto"> for <a>. */
