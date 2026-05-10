@@ -174,7 +174,7 @@ export default function HomePage() {
                 Autoplays muted (browser policy); a tap on the pill toggles sound. */}
             <HeroVideo src="/smartline-hero.mp4" />
 
-            {/* Strawberry web demo from Lead Agent Studio */}
+            {/* SmartLine web demo from Lead Agent Studio */}
             <div
               id="strawberry-demo"
               className="relative left-1/2 mt-12 w-[min(980px,calc(100vw-3rem))] -translate-x-1/2 text-left"
@@ -184,19 +184,20 @@ export default function HomePage() {
                   className="mb-3 text-xs font-semibold uppercase tracking-widest"
                   style={{ color: ACCENT }}
                 >
-                  Web demo
+                  Live agent demo
                 </p>
                 <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Try Strawberry in your browser
+                  Live challenge — test the agent now
                 </h2>
                 <p className="mx-auto mt-4 max-w-[620px] text-base leading-relaxed text-gray-600">
-                  The Lead Agent Studio voice demo is embedded here, directly under the video.
+                  The ready-to-use Lead Agents Studio SmartLine web widget is embedded here,
+                  directly under the video.
                 </p>
               </div>
 
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
                 <iframe
-                  title="Strawberry voice agent web demo"
+                  title="SmartLine live agent web demo"
                   src={strawberryDemoUrl}
                   className="h-[min(76vh,760px)] w-full border-0 bg-white"
                   allow="microphone; autoplay; clipboard-write"
@@ -212,7 +213,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="font-medium text-black underline-offset-4 hover:underline"
                 >
-                  Open Strawberry demo in a new tab
+                  Open live agent demo in a new tab
                 </a>
               </p>
             </div>
