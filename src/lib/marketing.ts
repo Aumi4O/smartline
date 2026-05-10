@@ -30,7 +30,7 @@ export const START_LOGIN_HREF_TESTER = "/api/billing/checkout?promo=TESTER";
 export const DEMO_PHONE_E164 = process.env.NEXT_PUBLIC_DEMO_PHONE_E164?.trim() || "";
 
 /**
- * Public URL of the Strawberry browser demo.
+ * Public URL of the SmartLine browser demo.
  * Set NEXT_PUBLIC_STRAWBERRY_VOICE_DEMO_URL to the live Lead Agent Studio demo URL.
  */
 export const STRAWBERRY_VOICE_DEMO_URL =
