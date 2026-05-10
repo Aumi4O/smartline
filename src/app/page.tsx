@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import {
   START_LOGIN_HREF,
   getHearItTalkHref,
+  getStrawberryVoiceDemoUrl,
   hearItTalkClassName,
 } from "@/lib/marketing";
 import { HeroVideo } from "@/components/marketing/hero-video";
@@ -73,6 +74,7 @@ const STROKE: React.SVGProps<SVGSVGElement> = {
 export default function HomePage() {
   const hearHref = getHearItTalkHref();
   const hearClass = hearItTalkClassName();
+  const strawberryDemoUrl = getStrawberryVoiceDemoUrl();
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-black antialiased">
@@ -171,6 +173,49 @@ export default function HomePage() {
             {/* Hero video — 9:16 portrait showreel rendered phone-mockup-sized.
                 Autoplays muted (browser policy); a tap on the pill toggles sound. */}
             <HeroVideo src="/smartline-hero.mp4" />
+
+            {/* Strawberry web demo from Lead Agent Studio */}
+            <div
+              id="strawberry-demo"
+              className="relative left-1/2 mt-12 w-[min(980px,calc(100vw-3rem))] -translate-x-1/2 text-left"
+            >
+              <div className="mb-5 text-center">
+                <p
+                  className="mb-3 text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: ACCENT }}
+                >
+                  Web demo
+                </p>
+                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Try Strawberry in your browser
+                </h2>
+                <p className="mx-auto mt-4 max-w-[620px] text-base leading-relaxed text-gray-600">
+                  The Lead Agent Studio voice demo is embedded here, directly under the video.
+                </p>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
+                <iframe
+                  title="Strawberry voice agent web demo"
+                  src={strawberryDemoUrl}
+                  className="h-[min(76vh,760px)] w-full border-0 bg-white"
+                  allow="microphone; autoplay; clipboard-write"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+
+              <p className="mt-4 text-center text-sm text-gray-500">
+                <a
+                  href={strawberryDemoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-black underline-offset-4 hover:underline"
+                >
+                  Open Strawberry demo in a new tab
+                </a>
+              </p>
+            </div>
 
             {/* Mini pricing strip — above the fold, shows the full billing flow */}
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
