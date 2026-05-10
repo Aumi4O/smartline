@@ -3,9 +3,7 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import {
   START_LOGIN_HREF,
   getHearItTalkHref,
-  getStrawberryVoiceDemoUrl,
   hearItTalkClassName,
-  isExternalHearItTalkHref,
 } from "@/lib/marketing";
 import { HeroVideo } from "@/components/marketing/hero-video";
 
@@ -75,11 +73,6 @@ const STROKE: React.SVGProps<SVGSVGElement> = {
 export default function HomePage() {
   const hearHref = getHearItTalkHref();
   const hearClass = hearItTalkClassName();
-  const hearIsExternal = isExternalHearItTalkHref(hearHref);
-  const strawberryDemoUrl = getStrawberryVoiceDemoUrl();
-  const hearLinkProps = hearIsExternal
-    ? { target: "_blank" as const, rel: "noopener noreferrer" as const }
-    : {};
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-black antialiased">
@@ -156,7 +149,7 @@ export default function HomePage() {
               >
                 Start for $5 →
               </a>
-              <a href={hearHref} className={hearClass} {...hearLinkProps}>
+              <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>
             </div>
@@ -288,54 +281,6 @@ export default function HomePage() {
             </p>
           </div>
         </section>
-
-        {/* ============= STRAWBERRY WEB DEMO (Lead Agent Studio) ============= */}
-        {strawberryDemoUrl ? (
-          <section
-            id="demo"
-            className="border-t border-gray-100 bg-white px-6 py-16 sm:py-24"
-          >
-            <div className="mx-auto max-w-[920px]">
-              <div className="mx-auto max-w-[640px] text-center">
-                <p
-                  className="mb-3 text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: ACCENT }}
-                >
-                  Live demo
-                </p>
-                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Try Strawberry in your browser
-                </h2>
-                <p className="mt-4 text-balance text-lg text-gray-600">
-                  The web build from Lead Agent Studio — same voice agent stack, no phone call
-                  required.
-                </p>
-              </div>
-
-              <div className="mt-10 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
-                <iframe
-                  title="Strawberry voice demo"
-                  src={strawberryDemoUrl}
-                  className="h-[min(70vh,720px)] w-full border-0"
-                  allow="microphone; autoplay; clipboard-write"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-
-              <p className="mt-4 text-center text-sm text-gray-500">
-                <a
-                  href={strawberryDemoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-black underline-offset-4 hover:underline"
-                >
-                  Open demo in a new tab
-                </a>
-              </p>
-            </div>
-          </section>
-        ) : null}
 
         {/* ============= PROBLEM ============= */}
         <section className="border-t border-gray-100 bg-gray-50/60 px-6 py-24">
@@ -1248,7 +1193,7 @@ export default function HomePage() {
               >
                 Start for $5
               </a>
-              <a href={hearHref} className={hearClass} {...hearLinkProps}>
+              <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>
             </div>
