@@ -29,30 +29,11 @@ export const START_LOGIN_HREF_TESTER = "/api/billing/checkout?promo=TESTER";
 /** E.164 demo line for "Hear It Talk" (e.g. +18005551212). If unset, we scroll to #how. */
 export const DEMO_PHONE_E164 = process.env.NEXT_PUBLIC_DEMO_PHONE_E164?.trim() || "";
 
-/**
- * Public URL of the Strawberry (browser) voice demo from Lead Agent Studio.
- * When set, homepage embeds it and "Hear It Talk" opens this URL.
- */
-export const STRAWBERRY_VOICE_DEMO_URL =
-  process.env.NEXT_PUBLIC_STRAWBERRY_VOICE_DEMO_URL?.trim() ?? "";
-
-export function getStrawberryVoiceDemoUrl(): string | null {
-  return STRAWBERRY_VOICE_DEMO_URL || null;
-}
-
 export function getHearItTalkHref(): string {
-  if (STRAWBERRY_VOICE_DEMO_URL) {
-    return STRAWBERRY_VOICE_DEMO_URL;
-  }
   if (DEMO_PHONE_E164) {
     return `tel:${DEMO_PHONE_E164.replace(/\s/g, "")}`;
   }
   return "#how";
-}
-
-/** True when Hear It Talk should open in a new tab (https demo) vs in-page / tel. */
-export function isExternalHearItTalkHref(href: string): boolean {
-  return /^https?:\/\//i.test(href);
 }
 
 /** Same visual weight as <Button size="lg" variant="secondary" className="w-full sm:w-auto"> for <a>. */
