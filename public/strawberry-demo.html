@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strawberry Voice Agent Demo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #ffffff;
+        color: #0d0d0d;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .demo {
+        display: grid;
+        min-height: 100vh;
+        grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 1.14fr);
+      }
+
+      .intro {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 32px;
+        border-right: 1px solid #e5e5e6;
+        padding: 40px;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: #0066ff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 520px;
+        font-size: clamp(32px, 4vw, 56px);
+        line-height: 1.02;
+        letter-spacing: -0.01em;
+      }
+
+      .copy {
+        margin: 20px 0 0;
+        max-width: 520px;
+        color: #4a4a5a;
+        font-size: 17px;
+        line-height: 1.65;
+      }
+
+      .button {
+        display: inline-flex;
+        width: fit-content;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 8px;
+        background: #0d0d0d;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 650;
+        padding: 0 22px;
+      }
+
+      .note {
+        margin: 14px 0 0;
+        color: #6e6e80;
+        font-size: 13px;
+      }
+
+      .panel {
+        display: flex;
+        min-height: 560px;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 28px;
+        background: #07111f;
+        color: #ffffff;
+        padding: 32px;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .status-label {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .status-title {
+        margin: 5px 0 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 13px;
+        padding: 8px 12px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #22c55e;
+      }
+
+      .wave {
+        display: flex;
+        min-height: 148px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .wave span {
+        width: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        transition: height 180ms ease, opacity 180ms ease;
+      }
+
+      .transcript {
+        display: grid;
+        gap: 12px;
+      }
+
+      .message {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 14px;
+      }
+
+      .speaker {
+        margin: 0 0 6px;
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .message p:last-child {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 820px) {
+        .demo {
+          grid-template-columns: 1fr;
+        }
+
+        .intro {
+          border-right: 0;
+          border-bottom: 1px solid #e5e5e6;
+          padding: 28px;
+        }
+
+        .panel {
+          min-height: 520px;
+          padding: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="demo">
+      <section class="intro" aria-label="Strawberry demo introduction">
+        <div>
+          <p class="eyebrow">Strawberry web demo</p>
+          <h1>Hear a voice agent qualify a lead.</h1>
+          <p class="copy">
+            This embedded demo shows the experience visitors should get from the live Strawberry
+            voice agent: fast greeting, lead qualification, answers, and a clear next step.
+          </p>
+        </div>
+        <div>
+          <button class="button" type="button" id="start">Play demo flow</button>
+          <p class="note">For the full live agent, set NEXT_PUBLIC_STRAWBERRY_VOICE_DEMO_URL.</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Strawberry demo transcript">
+        <div class="status">
+          <div>
+            <p class="status-label">Lead Agent Studio</p>
+            <p class="status-title">Strawberry is ready</p>
+          </div>
+          <div class="live"><span class="dot"></span><span id="state">Demo idle</span></div>
+        </div>
+
+        <div class="wave" aria-hidden>
+          <span style="height: 28px"></span>
+          <span style="height: 48px"></span>
+          <span style="height: 78px"></span>
+          <span style="height: 52px"></span>
+          <span style="height: 98px"></span>
+          <span style="height: 70px"></span>
+          <span style="height: 40px"></span>
+          <span style="height: 84px"></span>
+          <span style="height: 62px"></span>
+          <span style="height: 38px"></span>
+        </div>
+
+        <div class="transcript" id="transcript"></div>
+      </section>
+    </main>
+
+    <script>
+      const lines = [
+        ["Strawberry", "Hi, thanks for calling. Are you looking to book a time or ask about pricing?"],
+        ["Lead", "Pricing first. Can this answer after-hours calls?"],
+        ["Strawberry", "Yes. I can answer 24/7, qualify the lead, send a booking link, and pass the summary to your team."],
+        ["Lead", "Great. Can someone follow up tomorrow morning?"],
+        ["Strawberry", "Absolutely. I will mark this as a qualified lead and schedule a follow-up for the morning."]
+      ];
+
+      const start = document.getElementById("start");
+      const state = document.getElementById("state");
+      const transcript = document.getElementById("transcript");
+      const bars = Array.from(document.querySelectorAll(".wave span"));
+
+      function renderLine(index) {
+        const [speaker, text] = lines[index];
+        const el = document.createElement("article");
+        el.className = "message";
+        el.innerHTML = `<p class="speaker">${speaker}</p><p>${text}</p>`;
+        transcript.appendChild(el);
+      }
+
+      start.addEventListener("click", () => {
+        transcript.innerHTML = "";
+        state.textContent = "Demo playing";
+        start.disabled = true;
+        start.textContent = "Playing...";
+
+        let index = 0;
+        const interval = window.setInterval(() => {
+          bars.forEach((bar, barIndex) => {
+            const height = 24 + ((index + 1) * (barIndex + 9) * 7) % 84;
+            bar.style.height = `${height}px`;
+            bar.style.opacity = String(0.55 + ((barIndex + index) % 4) * 0.12);
+          });
+
+          if (index < lines.length) {
+            renderLine(index);
+            index += 1;
+            return;
+          }
+
+          window.clearInterval(interval);
+          state.textContent = "Demo complete";
+          start.disabled = false;
+          start.textContent = "Replay demo flow";
+        }, 950);
+      });
+    </script>
+  </body>
+</html>
