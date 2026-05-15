@@ -30,6 +30,7 @@ export default function PhoneNumbersPage() {
   const [agentsError, setAgentsError] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [creditCheckoutUrl, setCreditCheckoutUrl] = useState("");
 
   const fetchMyNumbers = useCallback(async () => {
     const res = await fetch("/api/phone-numbers");
@@ -72,6 +73,7 @@ export default function PhoneNumbersPage() {
     setProvisioning(true);
     setError("");
     setNotice("");
+    setCreditCheckoutUrl("");
     try {
       const res = await fetch("/api/phone-numbers/purchase", {
         method: "POST",
@@ -95,7 +97,12 @@ export default function PhoneNumbersPage() {
         fetchMyNumbers();
       } else {
         if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
+          setCreditCheckoutUrl(data.checkoutUrl);
+          setError(
+            data.message ||
+              data.error ||
+              "Load the $15 starter credit pack before SmartLine starts provider-cost actions."
+          );
           return;
         }
         setError(data.error || "Could not provision a number");
@@ -122,6 +129,45 @@ export default function PhoneNumbersPage() {
 
   return (
     <div>
+      {creditCheckoutUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 py-8 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="credit-required-title"
+        >
+          <div className="w-full max-w-[420px] rounded-lg bg-white p-6 text-left shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="credit-required-title" className="text-xl font-semibold text-black">
+                  Load $15 credits first
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-gray-500">
+                  Registering a phone number starts real provider cost. The $15 becomes usage
+                  credits in your account and starts your 7-day Pro trial.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCreditCheckoutUrl("")}
+                className="rounded-md px-2 py-1 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-black"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-5 flex flex-col gap-3">
+              <a href={creditCheckoutUrl} className={buttonClasses({ className: "w-full" })}>
+                Load $15 credits
+              </a>
+              <Button variant="ghost" onClick={() => setCreditCheckoutUrl("")}>
+                Not now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-black">Phone Numbers</h1>
         <p className="mt-1 text-gray-500">
@@ -249,6 +295,7 @@ export default function PhoneNumbersPage() {
               <div className="space-y-3">
                 {activeNumbers.map((n) => {
                   const agentName = n.agentId ? agentNameById[n.agentId] : null;
+                  const displayedMonthlyCostCents = Math.max(n.monthlyCostCents, 189);
                   return (
                     <div
                       key={n.id}
@@ -257,7 +304,7 @@ export default function PhoneNumbersPage() {
                       <div>
                         <p className="text-base font-semibold text-black">{n.phoneNumber}</p>
                         <p className="text-xs text-gray-500">
-                          ${(n.monthlyCostCents / 100).toFixed(2)}/mo
+                          ${(displayedMonthlyCostCents / 100).toFixed(2)}/mo
                           {" · "}
                           {agentName ? (
                             <>
