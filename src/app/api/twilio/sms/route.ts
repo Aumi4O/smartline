@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { phoneNumbers, agents, organizations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { buildCallConfig, createCallRecord, addCallMessage } from "@/lib/calls/call-handler";
-import { deductCredits } from "@/lib/billing/credits";
+import { deductCredits, getBalance } from "@/lib/billing/credits";
 import { USAGE_RATES } from "@/lib/pricing";
 
 /**
@@ -38,6 +38,14 @@ export async function POST(req: NextRequest) {
 
     if (!agent) {
       return smsResponse("No agent is available at this number right now.");
+    }
+
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, phoneRecord.orgId),
+    });
+    const balance = await getBalance(phoneRecord.orgId);
+    if (org?.planStatus === "inactive" || balance <= 0) {
+      return smsResponse("This SmartLine agent needs usage credits before it can reply.");
     }
 
     const config = await buildCallConfig(phoneRecord.orgId, agent.id, from);

@@ -20,7 +20,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   providers: [
-    Google({ allowDangerousEmailAccountLinking: true }),
+    Google({
+      allowDangerousEmailAccountLinking: true,
+      authorization: { params: { prompt: "select_account" } },
+    }),
     Resend({
       apiKey: resendApiKey,
       from: process.env.AUTH_EMAIL_FROM ?? "SmartLine <onboarding@resend.dev>",

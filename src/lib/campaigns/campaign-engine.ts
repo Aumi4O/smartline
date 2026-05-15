@@ -4,6 +4,7 @@ import { eq, and, or, sql } from "drizzle-orm";
 import { runAllChecks } from "./tcpa";
 import { getSubAccountClient } from "@/lib/twilio";
 import { parseSchedule, isInsideCallWindow } from "./schedule";
+import { getBalance } from "@/lib/billing/credits";
 
 export async function getNextLeadsToCall(
   campaignId: string,
@@ -60,6 +61,10 @@ export async function initiateOutboundCall(
   });
   if (!org?.twilioSubAccountSid || !org?.twilioSubAuthToken) {
     return { success: false, error: "Twilio sub-account not provisioned" };
+  }
+  const balance = await getBalance(campaign.orgId);
+  if (org.planStatus === "inactive" || balance <= 0) {
+    return { success: false, error: "Load $15 starter credits before running outbound calls" };
   }
 
   let fromNumber: string | null = null;

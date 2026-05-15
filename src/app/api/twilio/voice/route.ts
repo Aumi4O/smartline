@@ -11,6 +11,7 @@ import {
 import { logAuditEvent } from "@/lib/compliance/audit";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { buildSipUri, escapeXml } from "@/lib/sip";
+import { getBalance } from "@/lib/billing/credits";
 
 /**
  * Twilio voice webhook — called when someone dials a SmartLine number.
@@ -55,6 +56,17 @@ export async function POST(req: NextRequest) {
     let org = await db.query.organizations.findFirst({
       where: eq(organizations.id, phoneRecord.orgId),
     });
+
+    const balance = await getBalance(phoneRecord.orgId);
+    if (org?.planStatus === "inactive" || balance <= 0) {
+      return new NextResponse(
+        twiml(
+          "This SmartLine agent needs usage credits before it can answer calls. Please contact the business directly. Goodbye.",
+          true
+        ),
+        { headers: { "Content-Type": "text/xml" } }
+      );
+    }
 
     // Per-tenant OpenAI project is nice for isolation, but not required for a
     // working call. Fall back to a shared platform project if the tenant
@@ -154,4 +166,3 @@ function twiml(message: string, hangup = false): string {
   ${hangup ? "<Hangup/>" : ""}
 </Response>`;
 }
-

@@ -9,7 +9,7 @@ export function FreeRegistrationForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   async function handleGoogle() {
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", { callbackUrl: "/dashboard" }, { prompt: "select_account" });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

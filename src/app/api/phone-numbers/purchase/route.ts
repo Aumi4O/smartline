@@ -6,7 +6,7 @@ import {
   searchAvailableNumbers,
 } from "@/lib/provisioning/twilio-provisioning";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
-import { deductCredits } from "@/lib/billing/credits";
+import { deductCredits, getBalance } from "@/lib/billing/credits";
 import {
   ACTIVATION_AMOUNT_CENTS,
   isPro,
@@ -51,6 +51,42 @@ export async function POST(req: NextRequest) {
       if (!agent) {
         return NextResponse.json({ error: "Agent not found" }, { status: 404 });
       }
+    }
+
+    const balance = await getBalance(org.id);
+    if (org.planStatus === "inactive" || balance < USAGE_RATES.phone_number_monthly_cents) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+      const customerId = await getOrCreateStripeCustomer(
+        org.id,
+        session.user!.email!,
+        org.name
+      );
+      const checkout =
+        org.planStatus === "inactive"
+          ? await createActivationCheckout(
+              org.id,
+              customerId,
+              `${appUrl}/phone-numbers?credits=1`,
+              `${appUrl}/phone-numbers`
+            )
+          : await createCreditCheckout(
+              org.id,
+              customerId,
+              ACTIVATION_AMOUNT_CENTS,
+              `${appUrl}/phone-numbers?credits=1`,
+              `${appUrl}/phone-numbers`
+            );
+
+      return NextResponse.json(
+        {
+          error:
+            "A SmartLine phone number costs about $1.89/month. Load the $15 starter credit pack first, then we can register the number.",
+          checkoutUrl: checkout.url,
+          requiredAmountCents: USAGE_RATES.phone_number_monthly_cents,
+          starterPackCents: ACTIVATION_AMOUNT_CENTS,
+        },
+        { status: 402 }
+      );
     }
 
     const freshOrg = await db.query.organizations.findFirst({
@@ -101,37 +137,9 @@ export async function POST(req: NextRequest) {
     );
 
     if (!deduction.success) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-      const customerId = await getOrCreateStripeCustomer(
-        org.id,
-        session.user!.email!,
-        org.name
-      );
-      const checkout =
-        org.planStatus === "inactive"
-          ? await createActivationCheckout(
-              org.id,
-              customerId,
-              `${appUrl}/phone-numbers?credits=1`,
-              `${appUrl}/phone-numbers`
-            )
-          : await createCreditCheckout(
-              org.id,
-              customerId,
-              ACTIVATION_AMOUNT_CENTS,
-              `${appUrl}/phone-numbers?credits=1`,
-              `${appUrl}/phone-numbers`
-            );
-
       return NextResponse.json(
-        {
-          error:
-            "A SmartLine phone number costs about $1.89/month. Load the $15 starter credit pack first, then we can register the number.",
-          checkoutUrl: checkout.url,
-          requiredAmountCents: USAGE_RATES.phone_number_monthly_cents,
-          starterPackCents: ACTIVATION_AMOUNT_CENTS,
-        },
-        { status: 402 }
+        { error: "Credits changed before purchase completed. Please try again." },
+        { status: 409 }
       );
     }
 
