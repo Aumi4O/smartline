@@ -143,15 +143,7 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a
-                href={START_LOGIN_HREF}
-                className={buttonClasses({
-                  size: "lg",
-                  className: "w-full sm:w-auto",
-                })}
-              >
-                Start free →
-              </a>
+              <FreeRegistrationForm />
               <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>
@@ -160,8 +152,6 @@ export default function HomePage() {
             <p className="mt-4 text-sm text-gray-500">
               Register free. Create your agent and explore first. When you start a paid provider action, load $15 in usage credits and get 7 days of Pro before $199/mo.
             </p>
-
-            <FreeRegistrationForm />
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400">
               <span>Powered by OpenAI</span>
