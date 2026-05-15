@@ -1,14 +1,13 @@
 import { auth } from "@/lib/auth";
 import { getOrCreateOrg } from "@/lib/org";
 import { getBalance } from "@/lib/billing/credits";
-import { isActivated, isPro } from "@/lib/pricing";
+import { isPro } from "@/lib/pricing";
 import { db } from "@/lib/db";
 import { agents, phoneNumbers, conversations, businessProfiles } from "@/lib/db/schema";
 import { eq, and, gte, count, sql } from "drizzle-orm";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
-import { ActivateButton } from "@/components/billing/activate-button";
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
 import { VoiceReadinessCard } from "@/components/dashboard/voice-readiness";
 
@@ -18,50 +17,6 @@ export default async function DashboardPage() {
 
   const org = await getOrCreateOrg(session.user.id, session.user.email!);
   const balance = await getBalance(org.id);
-  const activated = isActivated(org.planStatus);
-
-  if (!activated) {
-    return (
-      <div>
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-black">Welcome to SmartLine</h1>
-          <p className="mt-1 text-gray-500">
-            Load your starter credits to start building AI voice agents.
-          </p>
-        </div>
-
-        <Card className="max-w-[480px]">
-          <CardHeader>
-            <CardTitle>Load $5 starter credits</CardTitle>
-            <CardDescription>
-              Not a fee. The full $5 lands in your account as usage credits and is spent only when your agent makes calls, sends SMS or hits the API.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2 text-sm text-gray-500">
-                <p>What $5 gets you:</p>
-                <ul className="ml-4 list-disc space-y-1">
-                  <li>~80 minutes of AI voice calls</li>
-                  <li>~250 chat messages</li>
-                  <li>Full end-to-end agent testing</li>
-                </ul>
-                <p className="pt-2 text-xs text-gray-400">
-                  Every cent is yours to spend. Top up anytime.
-                </p>
-              </div>
-              <div className="border-t border-gray-200 pt-4">
-                <ActivateButton />
-              </div>
-              <p className="text-xs text-gray-400">
-                No subscription required. Pay-as-you-go from your credit balance.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -121,7 +76,6 @@ export default async function DashboardPage() {
       </div>
 
       <OnboardingWizard
-        activated={activated}
         hasAgent={hasAgent}
         hasPhone={hasPhone}
         hasProfile={hasProfile}

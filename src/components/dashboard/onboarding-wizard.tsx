@@ -15,26 +15,17 @@ interface OnboardingStep {
 }
 
 interface Props {
-  activated: boolean;
   hasAgent: boolean;
   hasPhone: boolean;
   hasProfile: boolean;
 }
 
-export function OnboardingWizard({ activated, hasAgent, hasPhone, hasProfile }: Props) {
+export function OnboardingWizard({ hasAgent, hasPhone, hasProfile }: Props) {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
 
   const steps = [
-    {
-      id: "activate",
-      title: "Load $5 starter credits",
-      description: "Not a fee — a $5 credit pack you spend on calls, SMS and API usage. Unlocks the platform.",
-      href: "/billing",
-      cta: "Load credits",
-      done: activated,
-    },
     {
       id: "profile",
       title: "Add Business Info",
@@ -54,7 +45,7 @@ export function OnboardingWizard({ activated, hasAgent, hasPhone, hasProfile }: 
     {
       id: "phone",
       title: "Get a Phone Number",
-      description: "Buy a local number so callers can reach your agent.",
+      description: "Registering a number starts provider cost, so credits are requested there.",
       href: "/phone-numbers",
       cta: "Get Number",
       done: hasPhone,
