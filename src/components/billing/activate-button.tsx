@@ -25,7 +25,7 @@ export function ActivateButton() {
     <Button onClick={handleActivate} disabled={loading} className="w-full" size="lg">
       {loading
         ? "Loading credits..."
-        : "Load $5 in credits → 3-day Pro trial, then $199/mo"}
+        : "Load $15 credits → 7-day Pro trial, then $199/mo"}
     </Button>
   );
 }

@@ -10,6 +10,8 @@ import {
   verificationTokens,
 } from "@/lib/db/schema";
 
+const resendApiKey = process.env.AUTH_RESEND_KEY || process.env.RESEND_API_KEY;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
     usersTable: users,
@@ -20,6 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({ allowDangerousEmailAccountLinking: true }),
     Resend({
+      apiKey: resendApiKey,
       from: process.env.AUTH_EMAIL_FROM ?? "SmartLine <onboarding@resend.dev>",
     }),
   ],

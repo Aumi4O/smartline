@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { PLANS, ACTIVATION_AMOUNT_CENTS, PRO_TRIAL_DAYS } from "@/lib/pricing";
+import {
+  PLANS,
+  ACTIVATION_AMOUNT_CENTS,
+  PRO_TRIAL_DAYS,
+  centsToUsd,
+} from "@/lib/pricing";
 
 /**
- * One-click Stripe Checkout for brand-new visitors.
+ * Stripe Checkout for the first paid provider-cost action.
  *
- * - No login, no email form on our side.
- * - Stripe's hosted page collects the email and the card.
- * - Creates a subscription Checkout: $199/mo Pro (with a 3-day trial) +
- *   a one-time $5 STARTER CREDIT PACK line. The $5 is not a fee — it
- *   lands as usage credits in the customer's account and is spent on
- *   their own calls/SMS/API. That matches our headline offer:
- *     "$5 starter credits today → 3 days full access → $199/mo auto-starts on day 4"
+ * - Creates a subscription Checkout: $199/mo Pro (with a 7-day trial) +
+ *   a one-time $15 STARTER CREDIT PACK line. The $15 is not a fee — it
+ *   lands as usage credits in the customer's account. Usage pricing carries
+ *   internal fee coverage so provider spend is not underfunded. That matches our headline offer:
+ *     "$15 credits when paid usage starts → 7 days full access → $199/mo"
  * - Promotion codes are enabled so the TESTER code works ($150 off the
- *   first month — does not discount the $5 starter credits).
+ *   first month — does not discount the $15 starter credits).
  * - On success we land on /welcome?session_id={ID} which fetches the email
  *   from Stripe and auto-sends a magic sign-in link.
  *
@@ -88,9 +91,9 @@ async function handle(req: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "$5 starter credits (not a fee)",
+              name: "$15 starter credits (not a fee)",
               description:
-                "Loaded as usage credits in your SmartLine account. Spent only on your own calls, SMS and API usage. Yours to keep.",
+                `Loaded as ${centsToUsd(ACTIVATION_AMOUNT_CENTS)} in usage credits for calls, SMS and API usage.`,
             },
             unit_amount: ACTIVATION_AMOUNT_CENTS,
           },

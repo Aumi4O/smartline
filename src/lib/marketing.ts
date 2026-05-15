@@ -5,23 +5,11 @@ import { cn } from "@/lib/utils";
  */
 
 /**
- * Primary "Start for $5" CTA.
- *
- * The $5 is a starter credit pack (not a fee) — it lands as usage credits
- * in the new org's balance and is spent only on calls/SMS/API. Loading it
- * also unlocks Pro for 3 days, after which Pro auto-starts at $199/mo.
- *
- * Hard-coded to /api/billing/checkout — a guest-friendly endpoint that
- * creates a Stripe Checkout Session and 303-redirects the visitor
- * straight to Stripe.
- *
- * No email form on our side. Stripe's own page collects the email and the
- * card. On payment, our webhook creates the user+org and emails a magic
- * sign-in link.
- *
- * One click on any homepage button → Stripe. Never goes through /login.
+ * Registration is free. The app asks for the $15 starter credit pack only
+ * when the customer starts a provider-cost action such as registering a
+ * phone number or running paid API usage.
  */
-export const START_LOGIN_HREF = "/api/billing/checkout";
+export const START_LOGIN_HREF = "/login";
 
 /** Tester promo CTA — auto-applies the TESTER coupon for $150 off first month. */
 export const START_LOGIN_HREF_TESTER = "/api/billing/checkout?promo=TESTER";

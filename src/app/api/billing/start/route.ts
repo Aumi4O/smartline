@@ -8,14 +8,14 @@ import {
 import { logAuditEvent } from "@/lib/compliance/audit";
 
 /**
- * One-click Start-for-$5 CTA.
+ * First-credit-pack CTA.
  *
  * - If not signed in           → redirect to /login?next=/api/billing/start
  * - If signed in, planStatus=inactive → create Stripe Checkout Session and 302 to it
  * - If already active          → redirect to /dashboard
  *
- * Used by all "Start for $5" CTAs on the landing page so a single click takes
- * the user straight to Stripe (signed-in) or signs them in first (signed-out).
+ * Used when a signed-in user reaches their first provider-cost action and needs
+ * credits before SmartLine spends money on phone/API infrastructure.
  */
 export async function GET(req: NextRequest) {
   const appUrl =

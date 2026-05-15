@@ -7,7 +7,18 @@ import {
 } from "@/lib/provisioning/twilio-provisioning";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { deductCredits } from "@/lib/billing/credits";
-import { isActivated, isPro, PAYG_LIMITS, PRO_LIMITS, USAGE_RATES } from "@/lib/pricing";
+import {
+  ACTIVATION_AMOUNT_CENTS,
+  isPro,
+  PAYG_LIMITS,
+  PRO_LIMITS,
+  USAGE_RATES,
+} from "@/lib/pricing";
+import {
+  createActivationCheckout,
+  createCreditCheckout,
+  getOrCreateStripeCustomer,
+} from "@/lib/billing/stripe-service";
 import { logAuditEvent } from "@/lib/compliance/audit";
 import { db } from "@/lib/db";
 import { agents, organizations } from "@/lib/db/schema";
@@ -15,11 +26,7 @@ import { and, eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
-    const { org } = await requireOrg();
-
-    if (!isActivated(org.planStatus)) {
-      return NextResponse.json({ error: "Account not activated" }, { status: 403 });
-    }
+    const { session, org } = await requireOrg();
 
     const body = await req.json().catch(() => ({}));
     const explicitNumber: string | undefined = body.phoneNumber;
@@ -94,8 +101,36 @@ export async function POST(req: NextRequest) {
     );
 
     if (!deduction.success) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+      const customerId = await getOrCreateStripeCustomer(
+        org.id,
+        session.user!.email!,
+        org.name
+      );
+      const checkout =
+        org.planStatus === "inactive"
+          ? await createActivationCheckout(
+              org.id,
+              customerId,
+              `${appUrl}/phone-numbers?credits=1`,
+              `${appUrl}/phone-numbers`
+            )
+          : await createCreditCheckout(
+              org.id,
+              customerId,
+              ACTIVATION_AMOUNT_CENTS,
+              `${appUrl}/phone-numbers?credits=1`,
+              `${appUrl}/phone-numbers`
+            );
+
       return NextResponse.json(
-        { error: "Insufficient credits. Add more credits first." },
+        {
+          error:
+            "A SmartLine phone number costs about $1.89/month. Load the $15 starter credit pack first, then we can register the number.",
+          checkoutUrl: checkout.url,
+          requiredAmountCents: USAGE_RATES.phone_number_monthly_cents,
+          starterPackCents: ACTIVATION_AMOUNT_CENTS,
+        },
         { status: 402 }
       );
     }

@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
       let orgId = session.metadata?.orgId;
       const type = session.metadata?.type;
 
-      // Guest checkout: no orgId in metadata because the visitor had no
-      // account when they clicked "Start for $5". Create user + org now
-      // from the email Stripe collected on its hosted page.
+      // Guest checkout fallback: no orgId in metadata because the visitor had no
+      // account when checkout started. Create user + org from the email Stripe
+      // collected on its hosted page.
       if (!orgId && type === "guest_activation_trial") {
         const email = session.customer_details?.email?.toLowerCase();
         if (email) {
@@ -60,11 +60,11 @@ export async function POST(req: NextRequest) {
         type === "activation_trial" ||
         type === "guest_activation_trial"
       ) {
-        const amountCents = parseInt(session.metadata?.amountCents || "500", 10);
+        const amountCents = parseInt(session.metadata?.amountCents || "1500", 10);
         await addCredits(
           orgId,
           amountCents,
-          "Activation — $5.00 usage credits",
+          "Activation — $15.00 usage credits",
           "purchase",
           { stripeSessionId: session.id }
         );

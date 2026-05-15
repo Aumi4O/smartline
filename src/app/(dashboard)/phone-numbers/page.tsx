@@ -26,6 +26,8 @@ export default function PhoneNumbersPage() {
   const [agentId, setAgentId] = useState<string>("");
   const [areaCode, setAreaCode] = useState("");
   const [provisioning, setProvisioning] = useState(false);
+  const [loadingAgents, setLoadingAgents] = useState(true);
+  const [agentsError, setAgentsError] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -38,12 +40,26 @@ export default function PhoneNumbersPage() {
   }, []);
 
   const fetchAgents = useCallback(async () => {
-    const res = await fetch("/api/agents");
-    if (res.ok) {
-      const data = await res.json();
-      const list = (data.agents || []).map((a: Agent) => ({ id: a.id, name: a.name }));
+    setLoadingAgents(true);
+    setAgentsError("");
+    try {
+      const res = await fetch("/api/agents");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAgentsError(data.error || "Could not load your agents. Refresh and try again.");
+        return;
+      }
+      const list = (data.agents || [])
+        .filter((a: Partial<Agent>): a is Agent => Boolean(a.id && a.name))
+        .map((a: Agent) => ({ id: a.id, name: a.name }));
       setAgentList(list);
-      if (!agentId && list.length) setAgentId(list[0].id);
+      if ((!agentId || !list.some((a: Agent) => a.id === agentId)) && list.length) {
+        setAgentId(list[0].id);
+      }
+    } catch {
+      setAgentsError("Could not load your agents. Refresh and try again.");
+    } finally {
+      setLoadingAgents(false);
     }
   }, [agentId]);
 
@@ -78,6 +94,10 @@ export default function PhoneNumbersPage() {
         setAreaCode("");
         fetchMyNumbers();
       } else {
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
         setError(data.error || "Could not provision a number");
       }
     } finally {
@@ -98,7 +118,7 @@ export default function PhoneNumbersPage() {
   const activeNumbers = myNumbers.filter((n) => n.status === "active");
   const agentNameById = Object.fromEntries(agentList.map((a) => [a.id, a.name]));
 
-  const noAgents = agentList.length === 0;
+  const noAgents = !loadingAgents && !agentsError && agentList.length === 0;
 
   return (
     <div>
@@ -116,11 +136,23 @@ export default function PhoneNumbersPage() {
           <CardHeader>
             <CardTitle>Get a phone number</CardTitle>
             <CardDescription>
-              US local number, $1.80/month · deducted from your credit balance
+              US local number, about $1.89/month · load $15 credits the first time provider cost starts
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {noAgents ? (
+            {loadingAgents ? (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                Loading your agents...
+              </div>
+            ) : agentsError ? (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                <p className="font-medium text-black">Could not load your agents.</p>
+                <p className="mt-1">{agentsError}</p>
+                <Button size="sm" className="mt-3" onClick={fetchAgents}>
+                  Retry
+                </Button>
+              </div>
+            ) : noAgents ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
                 <p className="font-medium text-black">Create an agent first.</p>
                 <p className="mt-1">

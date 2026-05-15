@@ -4,7 +4,7 @@ import { createAgent, listAgents } from "@/lib/agents/agent-service";
 import { getBusinessProfile, buildSystemPrompt } from "@/lib/knowledge/business-profile";
 import { createDocument } from "@/lib/knowledge/knowledge-service";
 import { buildKnowledgeText } from "@/lib/knowledge/business-profile";
-import { isActivated, isPro, PAYG_LIMITS, PRO_LIMITS } from "@/lib/pricing";
+import { isPro, PAYG_LIMITS, PRO_LIMITS } from "@/lib/pricing";
 import { logAuditEvent } from "@/lib/compliance/audit";
 
 export async function GET() {
@@ -22,10 +22,6 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { session, org } = await requireOrg();
-
-    if (!isActivated(org.planStatus)) {
-      return NextResponse.json({ error: "Account not activated" }, { status: 403 });
-    }
 
     const existing = await listAgents(org.id);
     const limit = isPro(org.plan) ? PRO_LIMITS.maxAgents : PAYG_LIMITS.maxAgents;

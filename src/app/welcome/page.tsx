@@ -98,7 +98,7 @@ function WelcomeContent() {
       </h1>
       <p className="mt-3 text-gray-600">
         {sessionId
-          ? "$5 of usage credits are now in your account. Your agent is unlocked — every cent is yours to spend on calls, SMS and API."
+          ? "$15 of usage credits are now in your account for calls, SMS and API."
           : "Enter your email and we'll send you a one-click sign-in link."}
       </p>
 

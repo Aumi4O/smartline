@@ -85,6 +85,25 @@
     let session = null;
     let isVoiceActive = false;
 
+    function currentPricingAnswer() {
+      return [
+        'Registration is free: you can create an account, build an agent, and explore before paying.',
+        'When you start paid provider usage such as registering a phone number or using paid API capacity, you load $15 in usage credits and get a 7-day Pro trial.',
+        'After the trial, Pro is $199/month. Phone numbers are about $1.89/month from your credits, and calls/SMS/API usage are pay as you go.'
+      ].join(' ');
+    }
+
+    function shouldAnswerPricingLocally(text) {
+      return /\b(price|pricing|cost|trial|credit|credits|subscription|monthly|phone number|setup|fee|pay)\b/i.test(text || '');
+    }
+
+    function normalizeAssistantResponse(text) {
+      if (/\$?\s*1,?000|setup starts|setup fee|starts at \$?1,?000/i.test(text || '')) {
+        return currentPricingAnswer();
+      }
+      return text;
+    }
+
     function setVoiceChrome(active) {
       if (active) {
         voiceBtn.classList.add('sl-voice-off');
@@ -158,16 +177,21 @@
       chatInput.disabled = true;
       setStatus('Thinking...');
       try {
-        await ensureSession();
-        const res = await fetch(`${apiBase}/api/smartline/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId, message: text })
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        addMessageToUI('assistant', data.response);
-        setStatus('');
+        if (shouldAnswerPricingLocally(text)) {
+          addMessageToUI('assistant', currentPricingAnswer());
+          setStatus('');
+        } else {
+          await ensureSession();
+          const res = await fetch(`${apiBase}/api/smartline/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId, message: text })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          addMessageToUI('assistant', normalizeAssistantResponse(data.response));
+          setStatus('');
+        }
       } catch (err) {
         setStatus(err.message || 'Something went wrong', true);
       }
@@ -199,7 +223,7 @@
         const agentDisplayName = root.dataset.agentName || 'SmartLine Enterprise Agent';
         const agent = new RealtimeAgent({
           name: agentDisplayName,
-          instructions: `You are ${agentDisplayName}. Professional, trusted. Use your tools. 2-3 sentences max.`,
+          instructions: `You are ${agentDisplayName}. Professional, trusted. Use your tools. 2-3 sentences max. Current pricing: registration is free; the first paid provider action loads $15 usage credits and starts a 7-day Pro trial; Pro is $199/month after trial; phone numbers are about $1.89/month from credits. Never mention setup fees or $1,000 pricing.`,
           tools: [
             tool({ name: 'lookup_services', description: 'Look up SmartLine services, pricing.', parameters: z.object({ query: z.string(), category: z.string().optional() }), execute: ({ query, category }) => toolFetch('lookup_services', { query, category }) }),
             tool({ name: 'lookup_faq', description: 'Look up FAQs.', parameters: z.object({ question: z.string(), topic: z.string().optional() }), execute: ({ question, topic }) => toolFetch('lookup_faq', { question, topic }) }),

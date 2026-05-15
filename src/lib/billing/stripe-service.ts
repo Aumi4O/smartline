@@ -32,14 +32,14 @@ export async function getOrCreateStripeCustomer(
 }
 
 /**
- * $5 starter credit pack (NOT a fee — every cent lands in the org's
- * usage credits) + SmartLine Pro at $199/mo with a 3-day trial, then
+ * $15 starter credit pack (NOT a fee — every cent lands in the org's
+ * usage credits) + SmartLine Pro at $199/mo with a 7-day trial, then
  * auto-renew. Implemented as one subscription Checkout: recurring Pro
- * Price line + one-time $5 starter-credits line.
+ * Price line + one-time $15 starter-credits line.
  *
  * The Pro line references STRIPE_PRO_PRICE_ID (created by scripts/stripe-bootstrap.mjs).
  * This lets the `TESTER` promo code — whose coupon has `applies_to: [Pro product]` —
- * discount only the $199 line, never the $5 starter credits.
+ * discount only the $199 line, never the starter credits.
  */
 export async function createActivationCheckout(
   orgId: string,
@@ -74,7 +74,7 @@ export async function createActivationCheckout(
         price_data: {
           currency: "usd",
           product_data: {
-            name: "$5 starter credits (not a fee)",
+            name: "$15 starter credits (not a fee)",
             description:
               "Loaded as usage credits in your SmartLine account. Spent only on your own calls, SMS and API usage. Yours to keep.",
           },

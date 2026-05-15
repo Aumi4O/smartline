@@ -31,6 +31,7 @@ interface BillingData {
 }
 
 const creditPacks = [
+  { label: "$15", amountCents: 1500 },
   { label: "$25", amountCents: 2500 },
   { label: "$50", amountCents: 5000 },
   { label: "$100", amountCents: 10000 },
@@ -38,12 +39,12 @@ const creditPacks = [
 ];
 
 const pricingTable = [
-  { service: "Voice calls (AI)", price: "$0.06/min" },
-  { service: "Phone (Twilio inbound)", price: "$0.026/min" },
-  { service: "Phone (Twilio outbound)", price: "$0.034/min" },
+  { service: "Voice calls (AI)", price: "$0.063/min" },
+  { service: "Phone (Twilio inbound)", price: "$0.028/min" },
+  { service: "Phone (Twilio outbound)", price: "$0.035/min" },
   { service: "Chat messages", price: "$0.002/msg" },
   { service: "SMS outbound", price: "$0.010/segment" },
-  { service: "Phone number", price: "$1.80/month" },
+  { service: "Phone number", price: "$1.89/month" },
   { service: "Extra agent", price: "$49/month" },
   { service: "Extra storage", price: "$5/GB/month" },
 ];
@@ -104,9 +105,9 @@ export default function BillingPage() {
         {isInactive && (
           <Card>
             <CardHeader>
-              <CardTitle>Load your $5 starter credits</CardTitle>
+              <CardTitle>Load your $15 starter credits</CardTitle>
               <CardDescription>
-                It&apos;s not a fee — the full $5 becomes usage credits in your account and is spent only when your agent makes calls, sends SMS or hits the API. Loading credits also unlocks Pro for 3 days. Pro auto-starts at $199/mo on day 4 unless you cancel.
+                Registration is free. Load credits only when SmartLine starts paying providers for you, like registering a phone number or running API usage. The full $15 becomes usage credits, and it unlocks a 7-day Pro trial. Pro auto-starts at $199/mo after the trial unless you cancel.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -114,7 +115,7 @@ export default function BillingPage() {
                 <ActivateButton />
               </div>
               <p className="mt-3 text-xs text-gray-400">
-                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month. Your $5 starter credits stay $5.
+                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month. Your $15 starter credits stay $15.
               </p>
             </CardContent>
           </Card>
@@ -263,7 +264,7 @@ export default function BillingPage() {
         <Card>
           <CardHeader>
             <CardTitle>Pricing</CardTitle>
-            <CardDescription>All usage includes 20% service fee</CardDescription>
+            <CardDescription>Pay-as-you-go pricing with platform margin included</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

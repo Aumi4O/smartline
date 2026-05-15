@@ -85,7 +85,7 @@ async function main() {
   console.log(`[+] Promo     ${promo.id}  code=${promo.code}  active=${promo.active}`);
 
   console.log(
-    `\nDone. Customers can now enter ${PROMO_CODE} at checkout for $150 off the first $199 — the $5 activation is never discounted.`
+    `\nDone. Customers can now enter ${PROMO_CODE} at checkout for $150 off the first $199 — the $15 starter credits are never discounted.`
   );
 }
 
