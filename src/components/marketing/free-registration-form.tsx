@@ -36,16 +36,13 @@ export function FreeRegistrationForm() {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="h-12 w-full rounded-lg bg-black px-5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 sm:w-auto"
-        >
-          Start free
-        </button>
-        <p className="text-xs text-gray-500">Google or email. No card needed.</p>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-black px-6 text-base font-medium text-white transition-colors hover:bg-gray-800 sm:w-auto"
+      >
+        Start free
+      </button>
 
       {open && (
         <div

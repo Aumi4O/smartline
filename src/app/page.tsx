@@ -150,6 +150,10 @@ export default function HomePage() {
               </a>
             </div>
 
+            <p className="mt-3 text-sm text-gray-500">
+              Google or email. No card needed.
+            </p>
+
             <p className="mt-4 text-sm text-gray-500">
               Register free. Create your agent and explore first. When you start a paid provider action, load $15 in usage credits and get 7 days of Pro before $199/mo.
             </p>
