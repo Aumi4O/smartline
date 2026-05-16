@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SUPPORT_EMAIL, mailto } from "@/lib/contact";
 
 type Props = {
   searchParams: Promise<{ error?: string }>;
@@ -61,7 +62,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
           </Link>
 
           <p className="mt-4 text-center text-xs text-gray-400">
-            Need help? <a href="mailto:support@leadagentsstudio.com" className="underline">support@leadagentsstudio.com</a>
+            Need help? <a href={mailto(SUPPORT_EMAIL)} className="underline">{SUPPORT_EMAIL}</a>
           </p>
         </div>
 

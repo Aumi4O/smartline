@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRIVACY_EMAIL, mailto } from "@/lib/contact";
 
 export const metadata = {
   title: "Privacy Policy — SmartLine",
@@ -83,7 +84,7 @@ export default function PrivacyPage() {
               <li><strong>Objection</strong> — object to processing of your data</li>
               <li><strong>Restriction</strong> — request restriction of processing</li>
             </ul>
-            <p className="mt-2">To exercise these rights, contact us at <a href="mailto:privacy@smartline.ai" className="text-black underline">privacy@smartline.ai</a>. We will respond within 30 days.</p>
+            <p className="mt-2">To exercise these rights, contact us at <a href={mailto(PRIVACY_EMAIL)} className="text-black underline">{PRIVACY_EMAIL}</a>. We will respond within 30 days.</p>
           </section>
 
           <section>
@@ -109,7 +110,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-black">13. Contact Us</h2>
             <p>For privacy-related questions or to exercise your rights:</p>
-            <p className="mt-2">Email: <a href="mailto:privacy@smartline.ai" className="text-black underline">privacy@smartline.ai</a></p>
+            <p className="mt-2">Email: <a href={mailto(PRIVACY_EMAIL)} className="text-black underline">{PRIVACY_EMAIL}</a></p>
           </section>
         </div>
       </main>

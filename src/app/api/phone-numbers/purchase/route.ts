@@ -23,6 +23,7 @@ import { logAuditEvent } from "@/lib/compliance/audit";
 import { db } from "@/lib/db";
 import { agents, organizations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Could not set up your Twilio sub-account. Please try again in a moment, or contact support@leadagentsstudio.com.",
+              `Could not set up your Twilio sub-account. Please try again in a moment, or contact ${SUPPORT_EMAIL}.`,
           },
           { status: 503 }
         );

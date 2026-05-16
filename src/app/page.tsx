@@ -6,6 +6,7 @@ import {
   getStrawberryVoiceDemoUrl,
   hearItTalkClassName,
 } from "@/lib/marketing";
+import { SUPPORT_EMAIL, mailto } from "@/lib/contact";
 import { HeroVideo } from "@/components/marketing/hero-video";
 import { FreeRegistrationForm } from "@/components/marketing/free-registration-form";
 
@@ -1259,8 +1260,8 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-500">
               <Link href="/terms" className="hover:text-black">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-black">Privacy Policy</Link>
-              <a href="mailto:support@leadagentsstudio.com" className="hover:text-black">
-                support@leadagentsstudio.com
+              <a href={mailto(SUPPORT_EMAIL)} className="hover:text-black">
+                {SUPPORT_EMAIL}
               </a>
             </div>
           </div>

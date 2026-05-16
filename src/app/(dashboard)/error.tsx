@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { SUPPORT_EMAIL, mailto } from "@/lib/contact";
 
 export default function DashboardError({
   error,
@@ -40,8 +41,8 @@ export default function DashboardError({
 
         <p className="mt-4 text-xs text-gray-400">
           Still stuck? Email{" "}
-          <a href="mailto:support@leadagentsstudio.com" className="underline">
-            support@leadagentsstudio.com
+          <a href={mailto(SUPPORT_EMAIL)} className="underline">
+            {SUPPORT_EMAIL}
           </a>
           {error.digest ? ` (ref: ${error.digest})` : ""}
         </p>

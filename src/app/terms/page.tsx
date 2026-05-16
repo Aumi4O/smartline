@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LEGAL_EMAIL, mailto } from "@/lib/contact";
 
 export const metadata = {
   title: "Terms of Service — SmartLine",
@@ -89,7 +90,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-black">15. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:legal@smartline.ai" className="text-black underline">legal@smartline.ai</a>.</p>
+            <p>For questions about these terms, contact us at <a href={mailto(LEGAL_EMAIL)} className="text-black underline">{LEGAL_EMAIL}</a>.</p>
           </section>
         </div>
       </main>
