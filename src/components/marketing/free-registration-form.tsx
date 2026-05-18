@@ -1,38 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState } from "react";
 
-export function FreeRegistrationForm() {
+type AuthAction = (formData: FormData) => void | Promise<void>;
+
+interface FreeRegistrationFormProps {
+  googleAction: AuthAction;
+  emailAction: AuthAction;
+}
+
+export function FreeRegistrationForm({
+  googleAction,
+  emailAction,
+}: FreeRegistrationFormProps) {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  async function handleGoogle() {
-    await signIn("google", { callbackUrl: "/dashboard" }, { prompt: "select_account" });
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = email.trim();
-    if (!trimmed) return;
-
-    setStatus("sending");
-    const result = await signIn("resend", {
-      email: trimmed,
-      redirect: false,
-      callbackUrl: "/dashboard",
-    });
-
-    setStatus(result?.error ? "error" : "sent");
-  }
-
-  const message =
-    status === "sent"
-      ? "Check your email for the sign-in link."
-      : status === "error"
-        ? "Could not send the link. Try Google or try again."
-        : "No card needed.";
 
   return (
     <>
@@ -71,14 +52,16 @@ export function FreeRegistrationForm() {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoogle}
-              className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-black transition-colors hover:border-gray-300 hover:bg-gray-50"
-            >
-              <span className="text-base font-bold text-[#4285F4]">G</span>
-              Continue with Google
-            </button>
+            <form action={googleAction} className="mt-6">
+              <input type="hidden" name="callbackUrl" value="/dashboard" />
+              <button
+                type="submit"
+                className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-black transition-colors hover:border-gray-300 hover:bg-gray-50"
+              >
+                <span className="text-base font-bold text-[#4285F4]">G</span>
+                Continue with Google
+              </button>
+            </form>
 
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-gray-200" />
@@ -86,30 +69,29 @@ export function FreeRegistrationForm() {
               <div className="h-px flex-1 bg-gray-200" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form action={emailAction} className="space-y-3">
+              <input type="hidden" name="callbackUrl" value="/dashboard" />
               <label className="sr-only" htmlFor="homepage-signup-email">
                 Work email
               </label>
               <input
                 id="homepage-signup-email"
                 type="email"
+                name="email"
                 required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
                 placeholder="Work email"
                 autoComplete="email"
                 className="h-11 w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-black outline-none transition-colors placeholder:text-gray-400 focus:border-black"
               />
               <button
                 type="submit"
-                disabled={status === "sending"}
                 className="h-11 w-full rounded-lg bg-black px-5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
               >
-                {status === "sending" ? "Sending..." : "Continue with Email"}
+                Continue with Email
               </button>
             </form>
 
-            <p className="mt-3 text-center text-xs text-gray-500">{message}</p>
+            <p className="mt-3 text-center text-xs text-gray-500">No card needed.</p>
           </div>
         </div>
       )}

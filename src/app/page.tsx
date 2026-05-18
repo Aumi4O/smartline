@@ -9,6 +9,7 @@ import {
 import { SUPPORT_EMAIL, mailto } from "@/lib/contact";
 import { HeroVideo } from "@/components/marketing/hero-video";
 import { FreeRegistrationForm } from "@/components/marketing/free-registration-form";
+import { signInWithEmail, signInWithGoogle } from "@/app/(auth)/login/actions";
 
 const ACCENT = "#0066FF";
 
@@ -144,7 +145,10 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <FreeRegistrationForm />
+              <FreeRegistrationForm
+                googleAction={signInWithGoogle}
+                emailAction={signInWithEmail}
+              />
               <a href={hearHref} className={hearClass}>
                 Hear It Talk
               </a>
