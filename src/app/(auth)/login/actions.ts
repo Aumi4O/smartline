@@ -1,6 +1,7 @@
 "use server";
 
 import { signIn } from "@/lib/auth";
+import { signOut } from "@/lib/auth";
 
 /**
  * Server actions for the login page.
@@ -33,6 +34,9 @@ function safeCallbackPath(value: FormDataEntryValue | null): string {
 
 export async function signInWithGoogle(formData: FormData) {
   const next = safeCallbackPath(formData.get("callbackUrl"));
+  if (formData.get("fresh") === "1") {
+    await signOut({ redirect: false });
+  }
   await signIn("google", { redirectTo: next });
 }
 
@@ -43,5 +47,8 @@ export async function signInWithEmail(formData: FormData) {
     throw new Error("Invalid email");
   }
   const next = safeCallbackPath(formData.get("callbackUrl"));
+  if (formData.get("fresh") === "1") {
+    await signOut({ redirect: false });
+  }
   await signIn("resend", { email, redirectTo: next });
 }

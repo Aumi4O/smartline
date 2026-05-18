@@ -54,6 +54,7 @@ export function FreeRegistrationForm({
 
             <form action={googleAction} className="mt-6">
               <input type="hidden" name="callbackUrl" value="/dashboard" />
+              <input type="hidden" name="fresh" value="1" />
               <button
                 type="submit"
                 className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-black transition-colors hover:border-gray-300 hover:bg-gray-50"
@@ -71,6 +72,7 @@ export function FreeRegistrationForm({
 
             <form action={emailAction} className="space-y-3">
               <input type="hidden" name="callbackUrl" value="/dashboard" />
+              <input type="hidden" name="fresh" value="1" />
               <label className="sr-only" htmlFor="homepage-signup-email">
                 Work email
               </label>
