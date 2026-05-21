@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { activateSubscription, cancelSubscription } from "@/lib/billing/stripe-service";
 import { addCredits } from "@/lib/billing/credits";
+import {
+  sendCreditPurchaseEmail,
+  sendPaymentFailedEmail,
+  sendSubscriptionCancelledEmail,
+  sendSubscriptionStartedEmail,
+  sendTrialEndingEmail,
+  sendTrialStartedEmail,
+} from "@/lib/billing/billing-emails";
 import { activateOrg } from "@/lib/org";
 import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { db } from "@/lib/db";
@@ -55,19 +63,25 @@ export async function POST(req: NextRequest) {
 
       if (!orgId) break;
 
+      const billingEmail =
+        session.customer_details?.email?.toLowerCase() ??
+        (await getOrgOwnerEmail(orgId));
+
       if (
         type === "activation" ||
         type === "activation_trial" ||
         type === "guest_activation_trial"
       ) {
         const amountCents = parseInt(session.metadata?.amountCents || "1500", 10);
-        await addCredits(
-          orgId,
-          amountCents,
-          "Activation — $15.00 usage credits",
-          "purchase",
-          { stripeSessionId: session.id }
-        );
+        if (amountCents > 0) {
+          await addCredits(
+            orgId,
+            amountCents,
+            `Activation — $${(amountCents / 100).toFixed(2)} usage credits`,
+            "purchase",
+            { stripeSessionId: session.id }
+          );
+        }
         await activateOrg(orgId);
         provisionOrg(orgId).catch((err) =>
           console.error(`Background provisioning failed for ${orgId}:`, err)
@@ -77,12 +91,19 @@ export async function POST(req: NextRequest) {
             type === "guest_activation_trial") &&
           session.subscription
         ) {
+          if (type === "guest_activation_trial") {
+            await stripe.subscriptions.update(session.subscription as string, {
+              metadata: { orgId, source: "guest_checkout" },
+            });
+          }
           await activateSubscription(orgId, session.subscription as string);
         }
+        await sendTrialStartedEmail(billingEmail, amountCents);
       }
 
       if (type === "subscription" && session.subscription) {
         await activateSubscription(orgId, session.subscription as string);
+        await sendSubscriptionStartedEmail(billingEmail);
       }
 
       if (type === "credits") {
@@ -95,6 +116,7 @@ export async function POST(req: NextRequest) {
             "purchase",
             { stripeSessionId: session.id }
           );
+          await sendCreditPurchaseEmail(billingEmail, amountCents);
         }
       }
       break;
@@ -122,7 +144,19 @@ export async function POST(req: NextRequest) {
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
       const orgId = sub.metadata?.orgId;
-      if (orgId) await cancelSubscription(orgId);
+      if (orgId) {
+        await cancelSubscription(orgId);
+        await sendSubscriptionCancelledEmail(await getOrgOwnerEmail(orgId));
+      }
+      break;
+    }
+
+    case "customer.subscription.trial_will_end": {
+      const sub = event.data.object as Stripe.Subscription;
+      const orgId = sub.metadata?.orgId;
+      if (orgId) {
+        await sendTrialEndingEmail(await getOrgOwnerEmail(orgId));
+      }
       break;
     }
 
@@ -135,12 +169,32 @@ export async function POST(req: NextRequest) {
         (invoice.metadata as Record<string, string> | null | undefined)?.orgId;
       if (orgId) {
         console.warn(`Payment failed for org ${orgId}, invoice ${invoice.id}`);
+        await sendPaymentFailedEmail(await getOrgOwnerEmail(orgId));
       }
       break;
     }
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function getOrgOwnerEmail(orgId: string): Promise<string | null> {
+  if (!isUuid(orgId)) return null;
+
+  const [row] = await db
+    .select({ email: users.email })
+    .from(orgMemberships)
+    .innerJoin(users, eq(orgMemberships.userId, users.id))
+    .where(eq(orgMemberships.orgId, orgId))
+    .limit(1);
+
+  return row?.email?.toLowerCase() ?? null;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 /**

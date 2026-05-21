@@ -129,6 +129,22 @@ export const mockStripe = {
     async retrieve(id: string) {
       return mockStripeState.subscriptions.get(id) ?? null;
     },
+    async update(id: string, params: { metadata?: Record<string, string> }) {
+      const existing =
+        mockStripeState.subscriptions.get(id) ?? {
+          id,
+          customer: "",
+          status: "trialing",
+          metadata: {},
+        };
+      const updated = {
+        ...existing,
+        metadata: { ...existing.metadata, ...(params.metadata ?? {}) },
+      };
+      mockStripeState.subscriptions.set(id, updated);
+      mockStripeState.calls.push({ op: "subscriptions.update", args: [id, params] });
+      return updated;
+    },
   },
   webhooks: {
     constructEvent(_body: string | Buffer, _signature: string, _secret: string) {

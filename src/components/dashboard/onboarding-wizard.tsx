@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button, buttonClasses } from "@/components/ui/button";
-
-interface OnboardingStep {
-  id: string;
-  title: string;
-  description: string;
-  href: string;
-  cta: string;
-  check: () => Promise<boolean>;
-}
 
 interface Props {
   hasAgent: boolean;

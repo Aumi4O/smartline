@@ -15,6 +15,10 @@ process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-auth-secret-at-least-
 process.env.AUTH_GOOGLE_ID = process.env.AUTH_GOOGLE_ID || "test-google-id";
 process.env.AUTH_GOOGLE_SECRET = process.env.AUTH_GOOGLE_SECRET || "test-google-secret";
 process.env.AUTH_RESEND_KEY = process.env.AUTH_RESEND_KEY || "re_test_dummy";
+process.env.MAILGUN_API_KEY = process.env.MAILGUN_API_KEY || "key-test-dummy";
+process.env.MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN || "mail.smartline.test";
+process.env.MAILGUN_FROM =
+  process.env.MAILGUN_FROM || "SmartLine <billing@mail.smartline.test>";
 
 beforeAll(() => {
   vi.stubGlobal("console", {

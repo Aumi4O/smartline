@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   MARKUP,
+  STRIPE_FIXED_FEE_CENTS,
+  STRIPE_PERCENT_FEE,
+  CREDIT_PACK_PAYMENT_FEE_RESERVE_CENTS,
   ACTIVATION_AMOUNT_CENTS,
   PRO_TRIAL_DAYS,
   PLANS,
@@ -9,6 +12,7 @@ import {
   CREDIT_PACKS,
   USAGE_RATES,
   centsToUsd,
+  stripeFeeForCharge,
   isActivated,
   isPro,
 } from "@/lib/pricing";
@@ -18,12 +22,18 @@ describe("pricing constants", () => {
     expect(MARKUP).toBe(1.2);
   });
 
-  it("activation deposit is $5 (500 cents)", () => {
-    expect(ACTIVATION_AMOUNT_CENTS).toBe(500);
+  it("models Stripe card processing fees", () => {
+    expect(STRIPE_PERCENT_FEE).toBe(0.029);
+    expect(STRIPE_FIXED_FEE_CENTS).toBe(30);
+    expect(CREDIT_PACK_PAYMENT_FEE_RESERVE_CENTS).toBe(30);
   });
 
-  it("Pro checkout trial is 3 days before first $199", () => {
-    expect(PRO_TRIAL_DAYS).toBe(3);
+  it("activation deposit is $15 (1500 cents)", () => {
+    expect(ACTIVATION_AMOUNT_CENTS).toBe(1500);
+  });
+
+  it("Pro checkout trial is 7 days before first $199", () => {
+    expect(PRO_TRIAL_DAYS).toBe(7);
   });
 
   it("pro plan is $199/month", () => {
@@ -44,26 +54,28 @@ describe("pricing constants", () => {
     }
   });
 
-  it("includes standard $25/$50/$100/$250 credit packs", () => {
+  it("includes standard $15/$25/$50/$100/$250 credit packs", () => {
     const amounts = CREDIT_PACKS.map((p) => p.amountCents);
-    expect(amounts).toEqual([2500, 5000, 10000, 25000]);
+    expect(amounts).toEqual([1500, 2500, 5000, 10000, 25000]);
   });
 
-  it("usage rates include markup over provider cost", () => {
-    // Twilio inbound: $0.022/min provider * 1.20 = $0.0264 -> 2.64 cents/min (stored as 2.6)
-    expect(USAGE_RATES.twilio_inbound_per_min_cents).toBeCloseTo(2.6, 1);
-    // Twilio outbound: $0.028/min * 1.20 = $0.0336 -> 3.36 (stored as 3.4)
-    expect(USAGE_RATES.twilio_outbound_per_min_cents).toBeCloseTo(3.4, 1);
-    // Voice: ~$0.05/min * 1.20 = $0.06
-    expect(USAGE_RATES.voice_per_min_cents).toBe(6);
-    // Phone number: $1.50/mo * 1.20 = $1.80 = 180 cents
-    expect(USAGE_RATES.phone_number_monthly_cents).toBe(180);
+  it("usage rates include markup plus internal Stripe fee coverage", () => {
+    expect(USAGE_RATES.twilio_inbound_per_min_cents).toBeCloseTo(2.76, 2);
+    expect(USAGE_RATES.twilio_outbound_per_min_cents).toBeCloseTo(3.52, 2);
+    expect(USAGE_RATES.voice_per_min_cents).toBeCloseTo(6.28, 2);
+    expect(USAGE_RATES.phone_number_monthly_cents).toBe(189);
   });
 
   it("outbound costs more than inbound (carrier reality)", () => {
     expect(USAGE_RATES.twilio_outbound_per_min_cents).toBeGreaterThan(
       USAGE_RATES.twilio_inbound_per_min_cents
     );
+  });
+});
+
+describe("Stripe fee accounting", () => {
+  it("calculates fees for customer-facing credit pack charges", () => {
+    expect(stripeFeeForCharge(1500)).toBe(74);
   });
 });
 

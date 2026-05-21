@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { getTestDb, resetTestDb, closeTestDb } from "../helpers/test-db";
-import { createOrg } from "../helpers/fixtures";
+import { addMembership, createOrg, createUser } from "../helpers/fixtures";
 import { stripeMockFactory, resetMockStripe, mockStripeState } from "../helpers/mock-stripe";
 import { twilioMockFactory, resetMockTwilio } from "../helpers/mock-twilio";
 import {
@@ -53,6 +53,7 @@ beforeEach(async () => {
     }
     return jsonResponse({}, { status: 404 });
   });
+  registerFetchMock("api.mailgun.net", () => jsonResponse({ id: "email_test_123" }));
 });
 
 function queueEvent(event: unknown) {
@@ -93,7 +94,7 @@ describe("POST /api/stripe/webhook — signature", () => {
 });
 
 describe("POST /api/stripe/webhook — checkout.session.completed (activation)", () => {
-  it("credits org with $5 and activates", async () => {
+  it("credits org with $15 and activates", async () => {
     const db = await getTestDb();
     const org = await createOrg(db, { planStatus: "inactive" });
 
@@ -102,7 +103,7 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       data: {
         object: {
           id: "cs_test_activation_1",
-          metadata: { orgId: org.id, type: "activation_trial", amountCents: "500" },
+          metadata: { orgId: org.id, type: "activation_trial", amountCents: "1500" },
           subscription: "sub_test_trialing_1",
         },
       },
@@ -116,7 +117,7 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
     expect(status).toBe(200);
 
     // balance credited
-    expect(await getBalance(org.id)).toBe(500);
+    expect(await getBalance(org.id)).toBe(1500);
     // plan activated
     const { organizations } = await import("@/lib/db/schema");
     const { eq } = await import("drizzle-orm");
@@ -137,7 +138,7 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       data: {
         object: {
           id: "cs_test_activation_2",
-          metadata: { orgId: org.id, type: "activation_trial", amountCents: "500" },
+          metadata: { orgId: org.id, type: "activation_trial", amountCents: "1500" },
           subscription: "sub_test_trialing_2",
         },
       },
@@ -156,6 +157,41 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
       .from(creditTransactions)
       .where(eq(creditTransactions.orgId, org.id));
     expect(tx.metadata).toMatchObject({ stripeSessionId: "cs_test_activation_2" });
+  });
+
+  it("emails the checkout email when trial activation completes", async () => {
+    const db = await getTestDb();
+    const org = await createOrg(db, { planStatus: "inactive" });
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_activation" });
+    });
+
+    queueEvent({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_test_activation_email",
+          customer_details: { email: "Buyer@Test.Local" },
+          metadata: { orgId: org.id, type: "activation_trial", amountCents: "1500" },
+          subscription: "sub_test_trialing_email",
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "buyer@test.local",
+      subject: "Your SmartLine trial is active",
+    });
   });
 
   it("skips when orgId missing from metadata", async () => {
@@ -199,6 +235,41 @@ describe("POST /api/stripe/webhook — checkout.session.completed (credits)", ()
       body: {},
     });
     expect(await getBalance(org.id)).toBe(10000);
+  });
+
+  it("emails the org owner when credits are purchased", async () => {
+    const db = await getTestDb();
+    const user = await createUser(db, { email: "owner@test.local" });
+    const org = await createOrg(db, { planStatus: "active" });
+    await addMembership(db, user.id, org.id, "owner");
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_credits" });
+    });
+
+    queueEvent({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_test_credits_email",
+          metadata: { orgId: org.id, type: "credits", amountCents: "10000" },
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "owner@test.local",
+      subject: "SmartLine credits added",
+    });
   });
 
   it("no-ops when amountCents is 0/missing", async () => {
@@ -362,6 +433,41 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
     expect(updated.plan).toBe("starter");
     expect(updated.stripeSubscriptionId).toBeNull();
+  });
+
+  it("customer.subscription.trial_will_end emails the org owner", async () => {
+    const db = await getTestDb();
+    const user = await createUser(db, { email: "trial-owner@test.local" });
+    const org = await createOrg(db, { planStatus: "pro", plan: "pro" });
+    await addMembership(db, user.id, org.id, "owner");
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_trial_end" });
+    });
+
+    queueEvent({
+      type: "customer.subscription.trial_will_end",
+      data: {
+        object: {
+          id: "sub_test_trial_ending",
+          metadata: { orgId: org.id },
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "trial-owner@test.local",
+      subject: "Your SmartLine trial ends soon",
+    });
   });
 
   it("subscription event with missing orgId is a safe no-op", async () => {

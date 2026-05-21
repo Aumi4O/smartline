@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { UpgradeCTA } from "@/components/billing/upgrade-cta";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard" },
@@ -58,7 +59,8 @@ export function Sidebar() {
           </ul>
         </nav>
 
-        <div className="border-t border-gray-200 p-4">
+        <div className="space-y-3 border-t border-gray-200 p-4">
+          <UpgradeCTA />
           <p className="truncate text-xs text-gray-400">SmartLine v0.1</p>
         </div>
       </div>

@@ -110,7 +110,7 @@ describe("POST /api/billing/credits — checkout", () => {
   });
 
   it("accepts each valid credit pack", async () => {
-    const validAmounts = [2500, 5000, 10000, 25000];
+    const validAmounts = [1500, 2500, 5000, 10000, 25000];
     for (const amt of validAmounts) {
       await authAsOrgOwner();
       const { status, body } = await invokeRoute<{ url: string }>(creditsRoute.POST, {
@@ -189,7 +189,7 @@ describe("POST /api/billing/activate", () => {
     expect(body.error).toMatch(/already activated/i);
   });
 
-  it("creates $5 + 3-day Pro trial checkout (subscription) for inactive orgs", async () => {
+  it("creates a $15 starter-credit checkout plus 7-day Pro trial for inactive orgs", async () => {
     await authAsOrgOwner("inactive");
     const { status, body } = await invokeRoute<{ url: string }>(activateRoute.POST, {
       method: "POST",
@@ -206,9 +206,10 @@ describe("POST /api/billing/activate", () => {
     expect(args.mode).toBe("subscription");
     expect(args.line_items).toHaveLength(2);
     expect(args.line_items[0].price_data.unit_amount).toBe(19900);
-    expect(args.line_items[1].price_data.unit_amount).toBe(500);
+    expect(args.line_items[1].price_data.unit_amount).toBe(1500);
     expect(args.metadata.type).toBe("activation_trial");
-    expect(args.subscription_data.trial_period_days).toBe(3);
+    expect(args.metadata.amountCents).toBe("1500");
+    expect(args.subscription_data.trial_period_days).toBe(7);
   });
 
   it("rate-limits billing endpoint to 5 req/min", async () => {

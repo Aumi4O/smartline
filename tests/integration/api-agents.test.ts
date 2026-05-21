@@ -77,14 +77,15 @@ describe("POST /api/agents", () => {
     expect((body as { error: string }).error).toMatch(/unauthorized/i);
   });
 
-  it("rejects when org plan is inactive", async () => {
-    await setupAuthedOrg({ planStatus: "inactive" });
-    const { status, body } = await invokeRoute(agentsRoute.POST, {
+  it("allows inactive free-registration orgs to create their first agent", async () => {
+    const { org } = await setupAuthedOrg({ planStatus: "inactive" });
+    const { status, body } = await invokeRoute<{ agent: { orgId: string; name: string } }>(agentsRoute.POST, {
       method: "POST",
       body: { name: "Test" },
     });
-    expect(status).toBe(403);
-    expect((body as { error: string }).error).toMatch(/not activated/i);
+    expect(status).toBe(201);
+    expect(body.agent.name).toBe("Test");
+    expect(body.agent.orgId).toBe(org.id);
   });
 
   it("creates an agent when activated", async () => {

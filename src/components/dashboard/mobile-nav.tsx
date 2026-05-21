@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { UpgradeCTA } from "@/components/billing/upgrade-cta";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard" },
@@ -27,17 +28,22 @@ export function MobileNav() {
 
   return (
     <div className="lg:hidden">
-      <div className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4">
+      <div className="flex h-14 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4">
         <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-black">
           SmartLine
         </Link>
-        <button
-          onClick={() => setOpen(!open)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-sm text-black"
-          aria-label="Toggle menu"
-        >
-          {open ? "✕" : "☰"}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-[150px]">
+            <UpgradeCTA compact />
+          </div>
+          <button
+            onClick={() => setOpen(!open)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-sm text-black"
+            aria-label="Toggle menu"
+          >
+            {open ? "✕" : "☰"}
+          </button>
+        </div>
       </div>
 
       {open && (

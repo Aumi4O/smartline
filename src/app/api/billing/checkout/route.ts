@@ -6,6 +6,11 @@ import {
   PRO_TRIAL_DAYS,
   centsToUsd,
 } from "@/lib/pricing";
+import { requireOrg } from "@/lib/org";
+import {
+  createSubscriptionCheckout,
+  getOrCreateStripeCustomer,
+} from "@/lib/billing/stripe-service";
 
 /**
  * Stripe Checkout for the first paid provider-cost action.
@@ -24,15 +29,36 @@ import {
  * `checkout.session.completed` with `metadata.type === "guest_activation_trial"`
  * and creates the user+org from `customer_details.email`.
  *
- * GET and POST both work so the same route can be a plain <a href="..."> or
- * a fetch().
+ * GET is the guest homepage path. POST is the signed-in upgrade path and
+ * returns JSON so dashboard fetch callers do not accidentally parse Stripe
+ * HTML after a redirect.
  */
 export async function GET(req: NextRequest) {
   return handle(req);
 }
 
 export async function POST(req: NextRequest) {
-  return handle(req);
+  try {
+    const { session, org } = await requireOrg();
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const customerId = await getOrCreateStripeCustomer(
+      org.id,
+      session.user!.email!,
+      org.name
+    );
+    const checkout = await createSubscriptionCheckout(
+      org.id,
+      customerId,
+      `${appUrl}/dashboard?upgraded=1`,
+      `${appUrl}/billing`
+    );
+
+    return NextResponse.json({ url: checkout.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Checkout failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 async function handle(req: NextRequest) {
