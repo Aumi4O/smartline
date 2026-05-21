@@ -12,6 +12,7 @@ import { FreeRegistrationForm } from "@/components/marketing/free-registration-f
 import { signInWithEmail, signInWithGoogle } from "@/app/(auth)/login/actions";
 
 const ACCENT = "#0066FF";
+const GUEST_CHECKOUT_HREF = "/api/billing/checkout";
 
 function Icon({
   children,
@@ -224,7 +225,7 @@ export default function HomePage() {
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
               {/* Step 1 — $15 starter credits */}
               <a
-                href={START_LOGIN_HREF}
+                href={GUEST_CHECKOUT_HREF}
                 className="group flex items-center justify-between gap-4 rounded-xl border-2 bg-white p-4 text-left transition-shadow hover:shadow-sm"
                 style={{ borderColor: ACCENT }}
               >
@@ -264,7 +265,10 @@ export default function HomePage() {
               </div>
 
               {/* Step 2 — $199/mo auto-starts */}
-              <div className="flex items-center justify-between gap-4 rounded-xl bg-black p-4 text-left text-white">
+              <a
+                href={GUEST_CHECKOUT_HREF}
+                className="flex items-center justify-between gap-4 rounded-xl bg-black p-4 text-left text-white transition-shadow hover:shadow-sm"
+              >
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                     After 7 days
@@ -283,7 +287,7 @@ export default function HomePage() {
                     <polyline points="12 7 12 12 15 14" />
                   </svg>
                 </span>
-              </div>
+              </a>
 
               {/* Plus */}
               <div
@@ -297,8 +301,8 @@ export default function HomePage() {
               </div>
 
               {/* Step 3 — Usage on top */}
-              <Link
-                href="#pricing"
+              <a
+                href={GUEST_CHECKOUT_HREF}
                 className="group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
               >
                 <div>
@@ -319,7 +323,7 @@ export default function HomePage() {
                     <polyline points="12 5 19 12 12 19" />
                   </svg>
                 </span>
-              </Link>
+              </a>
             </div>
 
             <p className="mt-4 text-center text-[11px] text-gray-400">
@@ -723,10 +727,10 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <a
-                  href={START_LOGIN_HREF}
+                  href={GUEST_CHECKOUT_HREF}
                   className={buttonClasses({ className: "mt-6 w-full" })}
                 >
-                  Start free
+                  Start checkout
                 </a>
               </div>
 
@@ -765,7 +769,7 @@ export default function HomePage() {
                 </ul>
 
                 <a
-                  href={START_LOGIN_HREF}
+                  href={GUEST_CHECKOUT_HREF}
                   className={buttonClasses({
                     className:
                       "mt-6 w-full bg-white text-black hover:bg-gray-100",
@@ -810,6 +814,15 @@ export default function HomePage() {
                   200 three-minute calls/month ≈{" "}
                   <span className="font-medium text-black">$56.70</span> on top of $199.
                 </p>
+                <a
+                  href={GUEST_CHECKOUT_HREF}
+                  className={buttonClasses({
+                    className: "mt-6 w-full",
+                    variant: "secondary",
+                  })}
+                >
+                  Start with credits
+                </a>
               </div>
             </div>
 
