@@ -116,9 +116,11 @@ export async function sendTrialStartedEmail(
     to,
     subject: "Your SmartLine trial is active",
     text: [
-      "Your SmartLine Pro trial is active.",
-      `${centsToUsd(creditAmountCents)} in starter credits has been loaded for calls, SMS and API usage.`,
-      `Your ${PRO_TRIAL_DAYS}-day trial includes Pro access. After the trial, Pro is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
+      "Your SmartLine plan trial is active.",
+      creditAmountCents > 0
+        ? `${centsToUsd(creditAmountCents)} in usage credits has been loaded for calls, SMS and API usage.`
+        : "You can add usage credits any time before running paid calls, SMS or API usage.",
+      `Your ${PRO_TRIAL_DAYS}-day trial includes paid-plan access. After the trial, Growth is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
@@ -142,10 +144,10 @@ export async function sendCreditPurchaseEmail(
 export async function sendSubscriptionStartedEmail(to: string | null | undefined) {
   await sendBillingEmail({
     to,
-    subject: "SmartLine Pro is active",
+    subject: "Your SmartLine plan is active",
     text: [
-      "Your SmartLine Pro subscription is active.",
-      `Pro is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo and renews automatically until cancelled.`,
+      "Your SmartLine subscription is active.",
+      `Growth is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo and renews automatically until cancelled.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
@@ -154,10 +156,10 @@ export async function sendSubscriptionStartedEmail(to: string | null | undefined
 export async function sendTrialEndingEmail(to: string | null | undefined) {
   await sendBillingEmail({
     to,
-    subject: "Your SmartLine trial ends soon",
+    subject: "Your SmartLine plan trial ends soon",
     text: [
-      "Your SmartLine Pro trial is ending soon.",
-      `After the trial, Pro continues at ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
+      "Your SmartLine plan trial is ending soon.",
+      `After the trial, Growth continues at ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
@@ -169,7 +171,7 @@ export async function sendPaymentFailedEmail(to: string | null | undefined) {
     subject: "SmartLine payment failed",
     text: [
       "We could not process your latest SmartLine payment.",
-      "Please update your payment method to keep Pro access and paid usage running.",
+      "Please update your payment method to keep paid-plan access and usage running.",
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
@@ -178,9 +180,9 @@ export async function sendPaymentFailedEmail(to: string | null | undefined) {
 export async function sendSubscriptionCancelledEmail(to: string | null | undefined) {
   await sendBillingEmail({
     to,
-    subject: "SmartLine Pro was cancelled",
+    subject: "SmartLine plan was cancelled",
     text: [
-      "Your SmartLine Pro subscription was cancelled.",
+      "Your SmartLine subscription was cancelled.",
       "Your workspace remains on Starter with any remaining credits still available for eligible usage.",
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),

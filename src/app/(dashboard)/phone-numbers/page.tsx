@@ -144,7 +144,7 @@ export default function PhoneNumbersPage() {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-500">
                   Registering a phone number starts real provider cost. The $15 becomes usage
-                  credits in your account and starts your 7-day Pro trial.
+                  credits in your account.
                 </p>
               </div>
               <button

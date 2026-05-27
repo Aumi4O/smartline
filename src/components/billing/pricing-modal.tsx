@@ -17,21 +17,21 @@ import { Button } from "@/components/ui/button";
  * It mirrors SmartLine's money model exactly so the UI never lies about
  * what's being charged:
  *
- *   1. Starter credits + trial   → $15 today as usage credits, then
- *                                  $199/mo after the trial
+ *   1. Growth plan trial         → $149/mo after a 7-day trial, with a
+ *                                  small usage-credit bonus for testing
  *                                  (POST /api/billing/activate when
  *                                  signed in; GET /api/billing/checkout
  *                                  otherwise)
  *
- *   2. Pro $199/mo (no trial)    → for active Starter orgs upgrading
- *                                  outside the trial (POST /api/billing/checkout
+ *   2. Scale $299/mo             → for active Starter/Growth orgs upgrading
+ *                                  (POST /api/billing/checkout?tier=scale
  *                                  → 303 to Stripe; we navigate top-level
  *                                  so the redirect is followed cleanly)
  *
  *   3. Credit packs ($15–$250)   → covers phone, SMS, and paid API
  *                                  usage. POST /api/billing/credits with
  *                                  { amountCents }. Required to actually
- *                                  *use* the product — Pro raises limits,
+ *                                  *use* the product — plans raise limits,
  *                                  credits pay providers.
  *
  * Opened from:
@@ -161,7 +161,8 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
   const isActivated = billing
     ? billing.planStatus === "active" || billing.planStatus === "pro"
     : false;
-  const isPro = billing?.plan === "pro";
+  const isPro =
+    billing?.plan === "pro" || billing?.plan === "growth" || billing?.plan === "scale";
   const isInactive = billing?.planStatus === "inactive";
 
   function handleTrial() {
@@ -175,7 +176,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
 
     // /api/billing/activate is the signed-in trial-start endpoint. It
     // returns JSON { url } pointing at Stripe Checkout (subscription,
-    // 7-day trial, $0 today, $199/mo after).
+    // 7-day trial, $0 today, Growth billing after).
     if (billing && isInactive) {
       void (async () => {
         const data = await safeJson("/api/billing/activate", { method: "POST" });
@@ -209,7 +210,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
-      const data = await safeJson("/api/billing/checkout", { method: "POST" });
+      const data = await safeJson("/api/billing/checkout?tier=scale", { method: "POST" });
       if (data.url) {
         window.location.href = data.url;
         return;
@@ -295,8 +296,8 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                   (isPro
                     ? "Top up credits to keep using phone, SMS & API"
                     : isActivated
-                      ? "Upgrade to Pro or top up credits"
-                      : "Load starter credits to start paid usage")}
+                      ? "Upgrade your plan or top up credits"
+                      : "Start a plan trial or buy usage credits")}
               </h2>
               {opts.reason && (
                 <p className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-black">
@@ -305,9 +306,9 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
               )}
               {!opts.reason && (
                 <p className="mt-3 text-sm text-gray-600">
-                  Free to register and explore. When you start paid provider
-                  usage, the $15 starter pack becomes account credits and
-                  starts your 7-day Pro trial.
+                  Free to register and explore. Paid plans include a 7-day
+                  trial and $4 usage credits to test real calls. Credit packs
+                  stay separate for phone, SMS, voice minutes, and API usage.
                 </p>
               )}
             </div>
@@ -319,7 +320,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
             )}
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {/* Card 1 — Starter credits + 7-day Pro trial */}
+              {/* Card 1 — Growth plan trial */}
               <div
                 className={`flex flex-col rounded-2xl border-2 p-5 ${emphasis === "trial" ? "" : "border-gray-200"}`}
                 style={
@@ -331,7 +332,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                     className="text-[10px] font-semibold uppercase tracking-widest"
                     style={{ color: ACCENT }}
                   >
-                    Starter credits + trial
+                    Growth plan trial
                   </p>
                   {emphasis === "trial" && (
                     <span
@@ -346,18 +347,18 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 <p className="mt-3 text-3xl font-semibold tracking-tight text-black">
-                  $15
+                  $149
                   <span className="ml-1 text-sm font-normal text-gray-400">
-                    credits
+                    /mo
                   </span>
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  The full $15 lands in your usage balance. Pro is $199/mo after 7 days unless cancelled.
+                  7-day trial, then monthly billing unless cancelled. Includes $4 usage credits to test real calls.
                 </p>
                 <ul className="mt-4 flex-1 space-y-2 text-xs text-gray-600">
-                  <li>• 3 agents · 10 numbers · 5 GB</li>
-                  <li>• Priority support during the trial</li>
-                  <li>• $15 today becomes account credits</li>
+                  <li>• 3 agents · 3 numbers · 500 included minutes</li>
+                  <li>• Lead qualification and handoff rules</li>
+                  <li>• Extra usage still uses credit packs</li>
                 </ul>
                 <Button
                   type="button"
@@ -371,11 +372,11 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                       ? "Already on Pro"
                       : isActivated
                         ? "Already activated"
-                        : "Load $15 credits →"}
+                        : "Start Growth trial →"}
                 </Button>
               </div>
 
-              {/* Card 2 — Pro $199/mo (subscription, no trial) */}
+              {/* Card 2 — Scale plan */}
               <div
                 className={`relative flex flex-col rounded-2xl p-5 text-white ${emphasis === "pro" ? "" : "border border-gray-700"}`}
                 style={{
@@ -392,18 +393,18 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                   {isPro ? "Current plan" : "Main plan"}
                 </span>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  Pro subscription
+                  Scale plan
                 </p>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  $199
+                  $299
                   <span className="ml-1 text-sm font-normal text-gray-500">/mo</span>
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Higher limits, priority support. Charged monthly.
+                  Higher volume, routing, analytics. Charged monthly.
                 </p>
                 <ul className="mt-4 flex-1 space-y-2 text-xs text-gray-300">
-                  <li>• 3 agents · 10 numbers · 100 KB docs · 5 GB</li>
-                  <li>• Priority support</li>
+                  <li>• 10 agents · 10 numbers · 2,000 included minutes</li>
+                  <li>• CRM/webhook handoff and analytics</li>
                   <li>• Cancel any time from the customer portal</li>
                 </ul>
                 <Button
@@ -417,8 +418,8 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                     : isPro
                       ? "You're on Pro"
                       : isActivated
-                        ? "Upgrade to Pro — $199/mo"
-                        : "Load $15 credits → 7-day trial"}
+                        ? "Upgrade to Scale — $299/mo"
+                        : "Start Growth trial →"}
                 </Button>
               </div>
 

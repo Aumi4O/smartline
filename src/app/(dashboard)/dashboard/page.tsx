@@ -59,11 +59,20 @@ export default async function DashboardPage() {
   const hasPhone = (phoneCount?.total || 0) > 0;
   const hasProfile = !!(profile && profile.businessName);
 
+  const planLabel =
+    org.plan === "scale" ? "Scale" : isPro(org.plan) ? "Growth" : "Starter";
+  const planDescription =
+    org.plan === "scale"
+      ? "$299/mo active"
+      : isPro(org.plan)
+        ? "$149/mo active"
+        : "Pay-as-you-go";
+
   const stats = [
     { title: "Active Agents", value: String(agentCount?.total || 0), description: hasAgent ? "Ready to take calls" : "Create your first agent" },
     { title: "Total Calls (30d)", value: String(callStats?.totalCalls || 0), description: "Last 30 days" },
     { title: "Credit Balance", value: `$${(balance / 100).toFixed(2)}`, description: "Available credits" },
-    { title: "Plan", value: isPro(org.plan) ? "Pro" : "Starter", description: isPro(org.plan) ? "$199/mo active" : "Pay-as-you-go" },
+    { title: "Plan", value: planLabel, description: planDescription },
   ];
 
   return (

@@ -160,7 +160,7 @@ describe("POST /api/billing/checkout — subscription upgrade", () => {
     expect(status).toBe(500);
   });
 
-  it("creates a subscription checkout", async () => {
+  it("creates a Growth subscription checkout by default", async () => {
     await authAsOrgOwner();
     const { status, body } = await invokeRoute<{ url: string }>(checkoutRoute.POST, {
       method: "POST",
@@ -169,8 +169,14 @@ describe("POST /api/billing/checkout — subscription upgrade", () => {
     expect(body.url).toMatch(/checkout\.stripe\.com/);
     const createCall = mockStripeState.calls.find((c) => c.op === "checkout.sessions.create");
     expect(createCall).toBeDefined();
-    const args = createCall!.args[0] as { mode: string };
+    const args = createCall!.args[0] as {
+      mode: string;
+      line_items: Array<{ price_data: { unit_amount: number } }>;
+      metadata: Record<string, string>;
+    };
     expect(args.mode).toBe("subscription");
+    expect(args.line_items[0].price_data.unit_amount).toBe(14900);
+    expect(args.metadata.tier).toBe("growth");
   });
 });
 
@@ -189,7 +195,7 @@ describe("POST /api/billing/activate", () => {
     expect(body.error).toMatch(/already activated/i);
   });
 
-  it("creates a $15 starter-credit checkout plus 7-day Pro trial for inactive orgs", async () => {
+  it("creates a Growth plan trial checkout plus $4 test credits for inactive orgs", async () => {
     await authAsOrgOwner("inactive");
     const { status, body } = await invokeRoute<{ url: string }>(activateRoute.POST, {
       method: "POST",
@@ -204,11 +210,12 @@ describe("POST /api/billing/activate", () => {
       subscription_data: { trial_period_days: number; metadata: Record<string, string> };
     };
     expect(args.mode).toBe("subscription");
-    expect(args.line_items).toHaveLength(2);
-    expect(args.line_items[0].price_data.unit_amount).toBe(19900);
-    expect(args.line_items[1].price_data.unit_amount).toBe(1500);
+    expect(args.line_items).toHaveLength(1);
+    expect(args.line_items[0].price_data.unit_amount).toBe(14900);
     expect(args.metadata.type).toBe("activation_trial");
-    expect(args.metadata.amountCents).toBe("1500");
+    expect(args.metadata.tier).toBe("growth");
+    expect(args.metadata.amountCents).toBe("400");
+    expect(args.metadata.creditType).toBe("bonus");
     expect(args.subscription_data.trial_period_days).toBe(7);
   });
 

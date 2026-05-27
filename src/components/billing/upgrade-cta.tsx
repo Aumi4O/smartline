@@ -13,9 +13,9 @@ interface BillingSummary {
 /**
  * Small upgrade affordance for the sidebar and mobile nav.
  *
- * Reflects the three-step money model so the button is always honest:
- *   - inactive  → "Load starter credits"
- *   - active (Starter) → "Upgrade to Pro" OR "Buy credits"
+ * Reflects the plan + credits model so the button is always honest:
+ *   - inactive  → "Start plan"
+ *   - active (Starter) → "Upgrade plan" OR "Buy credits"
  *   - pro       → "Buy credits"
  *
  * Every variant opens the same pricing modal, which is the canonical
@@ -46,29 +46,29 @@ export function UpgradeCTA({ compact = false }: { compact?: boolean } = {}) {
 
   const plan = data?.plan ?? "starter";
   const planStatus = data?.planStatus ?? "inactive";
-  const isPro = plan === "pro";
+  const isPro = plan === "pro" || plan === "growth" || plan === "scale";
   const isInactive = planStatus === "inactive";
 
   const primaryLabel = isInactive
-    ? "Load credits"
+    ? "Start plan"
     : isPro
       ? "Buy credits"
-      : "Upgrade to Pro";
+      : "Upgrade plan";
 
   function openTrialModal() {
     open({
-      title: "Load starter credits and start your trial",
+      title: "Start your Growth trial",
       reason:
-        "$15 today becomes usage credits in your account and starts a 7-day Pro trial. $199/mo is charged after the trial unless you cancel from the customer portal first.",
+        "Growth starts with a 7-day trial and $4 in usage credits for real call testing. $149/mo is charged after the trial unless you cancel from the customer portal first.",
       emphasis: "trial",
     });
   }
 
   function openProModal() {
     open({
-      title: "Upgrade to SmartLine Pro",
+      title: "Upgrade to SmartLine Scale",
       reason:
-        "Pro raises your limits to 3 agents, 10 numbers, 5 GB storage, and includes priority support — $199/mo, cancel any time.",
+        "Scale raises your limits to 10 agents, 10 numbers, 2,000 included minutes, routing, and analytics — $299/mo, cancel any time.",
       emphasis: "pro",
     });
   }
@@ -109,17 +109,17 @@ export function UpgradeCTA({ compact = false }: { compact?: boolean } = {}) {
       </p>
       <p className="mt-1 text-sm font-semibold text-black">
         {isInactive
-          ? "Load starter credits"
+          ? "Start a plan trial"
           : isPro
             ? "Need more credits?"
-            : "Upgrade to Pro"}
+            : "Upgrade your plan"}
       </p>
       <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
         {isPro
           ? `$${((data?.balanceCents ?? 0) / 100).toFixed(2)} balance — buy packs anytime`
           : isInactive
-            ? "$15 credits · 7-day trial"
-            : "$199/mo · 3 agents · 10 numbers"}
+            ? "$149/mo Growth · 7-day trial"
+            : "$299/mo · 10 agents · routing"}
       </p>
       <Button
         type="button"

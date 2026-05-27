@@ -2,7 +2,12 @@ import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { PLANS, ACTIVATION_AMOUNT_CENTS, PRO_TRIAL_DAYS } from "@/lib/pricing";
+import {
+  PLAN_TRIAL_CREDIT_CENTS,
+  PRO_TRIAL_DAYS,
+  type SubscriptionTierKey,
+  getSubscriptionTier,
+} from "@/lib/pricing";
 
 export async function getOrCreateStripeCustomer(
   orgId: string,
@@ -32,65 +37,36 @@ export async function getOrCreateStripeCustomer(
 }
 
 /**
- * $15 starter credit pack (NOT a fee — every cent lands in the org's
- * usage credits) + SmartLine Pro at $199/mo with a 7-day trial, then
- * auto-renew. Implemented as one subscription Checkout: recurring Pro
- * Price line + one-time $15 starter-credits line.
- *
- * The Pro line references STRIPE_PRO_PRICE_ID (created by scripts/stripe-bootstrap.mjs).
- * This lets the `TESTER` promo code — whose coupon has `applies_to: [Pro product]` —
- * discount only the $199 line, never the starter credits.
+ * Selected monthly tier with a 7-day trial. The webhook grants a small
+ * usage-credit bonus after Checkout completes so paid-plan customers can test
+ * calls before buying a separate credit pack.
  */
 export async function createActivationCheckout(
   orgId: string,
   customerId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  tierKey: SubscriptionTierKey = "growth"
 ) {
-  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
-
-  const proLineItem = proPriceId
-    ? { price: proPriceId, quantity: 1 }
-    : {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: PLANS.pro.name,
-            description: `Full Pro access. $199/mo after a ${PRO_TRIAL_DAYS}-day trial — cancel before then to avoid subscription billing.`,
-          },
-          recurring: { interval: "month" as const },
-          unit_amount: PLANS.pro.monthlyPriceCents,
-        },
-        quantity: 1,
-      };
+  const tier = getSubscriptionTier(tierKey);
+  const tierLineItem = subscriptionTierLineItem(tierKey);
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
+    payment_method_collection: "always",
     allow_promotion_codes: true,
-    line_items: [
-      proLineItem,
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "$15 starter credits (not a fee)",
-            description:
-              "Loaded as usage credits in your SmartLine account. Spent only on your own calls, SMS and API usage. Yours to keep.",
-          },
-          unit_amount: ACTIVATION_AMOUNT_CENTS,
-        },
-        quantity: 1,
-      },
-    ],
+    line_items: [tierLineItem],
     subscription_data: {
       trial_period_days: PRO_TRIAL_DAYS,
-      metadata: { orgId },
+      metadata: { orgId, tier: tier.key },
     },
     metadata: {
       orgId,
       type: "activation_trial",
-      amountCents: String(ACTIVATION_AMOUNT_CENTS),
+      tier: tier.key,
+      amountCents: String(PLAN_TRIAL_CREDIT_CENTS),
+      creditType: "bonus",
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
@@ -103,39 +79,48 @@ export async function createSubscriptionCheckout(
   orgId: string,
   customerId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  tierKey: SubscriptionTierKey = "growth"
 ) {
-  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
-
-  const proLineItem = proPriceId
-    ? { price: proPriceId, quantity: 1 }
-    : {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: PLANS.pro.name,
-            description: "AI voice agents platform — 3 agents, 5GB storage, priority support",
-          },
-          recurring: { interval: "month" as const },
-          unit_amount: PLANS.pro.monthlyPriceCents,
-        },
-        quantity: 1,
-      };
+  const tier = getSubscriptionTier(tierKey);
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
+    payment_method_collection: "always",
     allow_promotion_codes: true,
-    line_items: [proLineItem],
+    line_items: [subscriptionTierLineItem(tierKey)],
     subscription_data: {
-      metadata: { orgId },
+      metadata: { orgId, tier: tier.key },
     },
-    metadata: { orgId, type: "subscription" },
+    metadata: { orgId, type: "subscription", tier: tier.key },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });
 
   return session;
+}
+
+export function subscriptionTierLineItem(tierKey: SubscriptionTierKey) {
+  const tier = getSubscriptionTier(tierKey);
+  const configuredPriceId = process.env[tier.stripePriceEnv];
+
+  if (configuredPriceId) {
+    return { price: configuredPriceId, quantity: 1 };
+  }
+
+  return {
+    price_data: {
+      currency: "usd",
+      product_data: {
+        name: tier.name,
+        description: `${tier.description} Includes ${tier.includedMinutes.toLocaleString()} minutes/month, ${tier.includedAgents} agent${tier.includedAgents === 1 ? "" : "s"}, and ${tier.includedPhoneNumbers} phone number${tier.includedPhoneNumbers === 1 ? "" : "s"}.`,
+      },
+      recurring: { interval: "month" as const },
+      unit_amount: tier.monthlyPriceCents,
+    },
+    quantity: 1,
+  };
 }
 
 export async function createCreditCheckout(
@@ -179,11 +164,20 @@ export async function createPortalSession(customerId: string, returnUrl: string)
 }
 
 export async function activateSubscription(orgId: string, subscriptionId: string) {
+  return activateSubscriptionTier(orgId, subscriptionId, "growth");
+}
+
+export async function activateSubscriptionTier(
+  orgId: string,
+  subscriptionId: string,
+  tierKey: SubscriptionTierKey | string = "growth"
+) {
+  const tier = getSubscriptionTier(tierKey);
   await db
     .update(organizations)
     .set({
       stripeSubscriptionId: subscriptionId,
-      plan: "pro",
+      plan: tier.key,
       planStatus: "pro",
       updatedAt: new Date(),
     })

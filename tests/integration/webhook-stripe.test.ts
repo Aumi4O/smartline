@@ -320,7 +320,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const { organizations } = await import("@/lib/db/schema");
     const { eq } = await import("drizzle-orm");
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
-    expect(updated.plan).toBe("pro");
+    expect(updated.plan).toBe("growth");
     expect(updated.planStatus).toBe("pro");
     expect(updated.stripeSubscriptionId).toBe("sub_test_xyz");
   });
@@ -349,7 +349,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const { organizations } = await import("@/lib/db/schema");
     const { eq } = await import("drizzle-orm");
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
-    expect(updated.plan).toBe("pro");
+    expect(updated.plan).toBe("growth");
   });
 
   it("customer.subscription.updated active → activates", async () => {
@@ -376,7 +376,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const { organizations } = await import("@/lib/db/schema");
     const { eq } = await import("drizzle-orm");
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
-    expect(updated.plan).toBe("pro");
+    expect(updated.plan).toBe("growth");
   });
 
   it("customer.subscription.updated canceled → downgrades to starter/active", async () => {
@@ -466,7 +466,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     expect(emails).toHaveLength(1);
     expect(emails[0]).toMatchObject({
       to: "trial-owner@test.local",
-      subject: "Your SmartLine trial ends soon",
+      subject: "Your SmartLine plan trial ends soon",
     });
   });
 

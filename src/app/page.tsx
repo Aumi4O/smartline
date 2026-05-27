@@ -13,6 +13,8 @@ import { signInWithEmail, signInWithGoogle } from "@/app/(auth)/login/actions";
 
 const ACCENT = "#0066FF";
 const GUEST_CHECKOUT_HREF = "/api/billing/checkout";
+const checkoutHref = (tier: "starter" | "growth" | "scale") =>
+  `${GUEST_CHECKOUT_HREF}?tier=${tier}`;
 
 function Icon({
   children,
@@ -160,7 +162,7 @@ export default function HomePage() {
             </p>
 
             <p className="mt-4 text-sm text-gray-500">
-              Register free. Create your agent and explore first. When you start a paid provider action, load $15 in usage credits and get 7 days of Pro before $199/mo.
+              Register free. Choose a plan when you are ready: $49, $149, or $299/mo after a 7-day trial, with $4 usage credits to test real calls.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400">
@@ -221,11 +223,10 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Mini pricing strip — above the fold, shows the full billing flow */}
+            {/* Mini pricing strip — above the fold, shows the paid-plan ladder */}
             <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
-              {/* Step 1 — $15 starter credits */}
               <a
-                href={GUEST_CHECKOUT_HREF}
+                href={checkoutHref("starter")}
                 className="group flex items-center justify-between gap-4 rounded-xl border-2 bg-white p-4 text-left transition-shadow hover:shadow-sm"
                 style={{ borderColor: ACCENT }}
               >
@@ -234,12 +235,12 @@ export default function HomePage() {
                     className="text-[10px] font-semibold uppercase tracking-widest"
                     style={{ color: ACCENT }}
                   >
-                    First paid action
+                    Starter
                   </p>
                   <p className="mt-1 text-xl font-semibold text-black">
-                    $15 <span className="text-xs font-normal text-gray-400">starter credits</span>
+                    $49<span className="text-xs font-normal text-gray-400">/mo</span>
                   </p>
-                  <p className="text-[11px] text-gray-500">Only when phone/API costs begin · 7 days Pro</p>
+                  <p className="text-[11px] text-gray-500">1 call flow · $4 test credits</p>
                 </div>
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5"
@@ -264,19 +265,18 @@ export default function HomePage() {
                 </svg>
               </div>
 
-              {/* Step 2 — $199/mo auto-starts */}
               <a
-                href={GUEST_CHECKOUT_HREF}
+                href={checkoutHref("growth")}
                 className="flex items-center justify-between gap-4 rounded-xl bg-black p-4 text-left text-white transition-shadow hover:shadow-sm"
               >
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                    After 7 days
+                    Growth
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    $199<span className="text-xs font-normal text-gray-400">/mo</span>
+                    $149<span className="text-xs font-normal text-gray-400">/mo</span>
                   </p>
-                  <p className="text-[11px] text-gray-400">Pro auto-starts · cancel anytime</p>
+                  <p className="text-[11px] text-gray-400">Main plan · qualify and follow up</p>
                 </div>
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-700 text-gray-300"
@@ -300,19 +300,18 @@ export default function HomePage() {
                 </svg>
               </div>
 
-              {/* Step 3 — Usage on top */}
               <a
-                href={GUEST_CHECKOUT_HREF}
+                href={checkoutHref("scale")}
                 className="group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
               >
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                    Usage
+                    Scale
                   </p>
                   <p className="mt-1 text-xl font-semibold text-black">
-                    From $0.063<span className="text-xs font-normal text-gray-400">/min</span>
+                    $299<span className="text-xs font-normal text-gray-400">/mo</span>
                   </p>
-                  <p className="text-[11px] text-gray-500">Only what you actually use</p>
+                  <p className="text-[11px] text-gray-500">Higher volume · routing · analytics</p>
                 </div>
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-transform group-hover:translate-x-0.5"
@@ -329,7 +328,7 @@ export default function HomePage() {
             <p className="mt-4 text-center text-[11px] text-gray-400">
               No long trial. No contracts.
               <span className="mx-1.5 text-gray-300" aria-hidden>·</span>
-              Cancel inside the 7-day window and you&apos;re never billed the $199.
+              Cancel inside the 7-day window and you&apos;re never billed the monthly plan.
             </p>
           </div>
         </section>
@@ -685,20 +684,20 @@ export default function HomePage() {
                 Pricing
               </p>
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                Start free. Pay when real usage starts.
+                Start with one call system. Scale when it works.
               </h2>
             </div>
 
             <p className="mx-auto mt-4 max-w-[560px] text-center text-gray-600">
-              Create your account, business profile, and first agent without paying. When SmartLine starts spending provider money for you, load $15 in credits, get 7 days of Pro, then continue at $199/mo.
+              Pick a monthly plan, get 7 days to test the assistant, and receive $4 in usage credits for real calls. Free accounts can still buy credit packs before running paid usage.
             </p>
 
             <div className="mt-14 grid gap-6 md:grid-cols-3">
-              {/* Step 1 — Starter credits */}
+              {/* Starter */}
               <div className="rounded-2xl border-2 p-7" style={{ borderColor: ACCENT }}>
                 <div className="flex items-baseline justify-between">
                   <p className="text-xs font-semibold uppercase tracking-widest text-black">
-                    Step 1 · First paid action
+                    Starter
                   </p>
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
@@ -708,17 +707,19 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="mt-4 text-5xl font-semibold tracking-tight">
-                  $15<span className="text-lg font-normal text-gray-400"> starter credits</span>
+                  $49<span className="text-lg font-normal text-gray-400">/mo</span>
                 </p>
                 <p className="mt-2 text-sm text-gray-600">
-                  Not a fee — a $15 credit pack you spend on your own calls, SMS and API. It starts only when real provider cost starts.
+                  Prove one AI call flow without turning the whole business upside down.
                 </p>
                 <ul className="mt-6 space-y-2.5 text-sm text-gray-600">
                   {[
-                    "Every cent lands as usage credits in your account.",
-                    "Spent only when your agent makes calls or sends SMS.",
-                    "Full Pro capabilities for 7 days.",
-                    "No surprise subscription charge during the window.",
+                    "1 AI agent",
+                    "1 phone number",
+                    "100 included minutes",
+                    "Missed-call capture and call summaries",
+                    "$4 usage credit bonus to test real calls",
+                    "Overage at $0.15/min",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
@@ -727,14 +728,14 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <a
-                  href={GUEST_CHECKOUT_HREF}
+                  href={checkoutHref("starter")}
                   className={buttonClasses({ className: "mt-6 w-full" })}
                 >
-                  Start checkout
+                  Start Starter
                 </a>
               </div>
 
-              {/* Step 2 — Pro auto-starts */}
+              {/* Growth */}
               <div className="relative rounded-2xl border border-gray-200 bg-black p-7 text-white">
                 <span
                   className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white"
@@ -743,23 +744,23 @@ export default function HomePage() {
                   Main plan
                 </span>
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Step 2 · After 7 days
+                  Growth
                 </p>
                 <p className="mt-4 text-5xl font-semibold tracking-tight">
-                  $199<span className="text-lg font-normal text-gray-500">/mo</span>
+                  $149<span className="text-lg font-normal text-gray-500">/mo</span>
                 </p>
                 <p className="mt-2 text-sm text-gray-300">
-                  Pro starts automatically after the 7-day window. Cancel any time before then and
-                  you are never billed the $199.
+                  Capture, qualify, and follow up with more leads automatically.
                 </p>
                 <ul className="mt-6 space-y-2.5 text-sm text-gray-300">
                   {[
                     "3 AI agents",
-                    "10 phone numbers",
-                    "100 knowledge-base documents",
-                    "5 GB storage",
-                    "Priority support",
-                    "Cancel anytime · month to month",
+                    "3 phone numbers",
+                    "500 included minutes",
+                    "Lead qualification and handoff rules",
+                    "SMS or email follow-up",
+                    "$4 usage credit bonus to test real calls",
+                    "Overage at $0.10/min",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
@@ -769,59 +770,57 @@ export default function HomePage() {
                 </ul>
 
                 <a
-                  href={GUEST_CHECKOUT_HREF}
+                  href={checkoutHref("growth")}
                   className={buttonClasses({
                     className:
                       "mt-6 w-full bg-white text-black hover:bg-gray-100",
                   })}
                 >
-                  Start free →
+                  Start Growth
                 </a>
                 <p className="mt-2 text-center text-xs text-gray-400">
-                  $15 credits when paid usage starts · Pro auto-starts after 7 days
+                  7-day trial · cancel before billing starts
                 </p>
               </div>
 
-              {/* Step 3 — Usage on top */}
+              {/* Scale */}
               <div className="rounded-2xl border border-gray-200 p-7">
                 <p className="text-xs font-semibold uppercase tracking-widest text-black">
-                  Step 3 · On top
+                  Scale
                 </p>
                 <p className="mt-4 text-5xl font-semibold tracking-tight">
-                  Usage<span className="text-lg font-normal text-gray-400"> billed</span>
+                  $299<span className="text-lg font-normal text-gray-400">/mo</span>
                 </p>
                 <p className="mt-2 text-sm text-gray-600">
-                  Pro includes capacity. Voice minutes, SMS and phone numbers are billed on top,
-                  at cost plus a small margin.
+                  For higher volume, multiple flows, and teams that need routing.
                 </p>
                 <ul className="mt-6 space-y-2.5 text-sm text-gray-700">
                   {[
-                    ["AI voice conversation", "$0.063/min"],
-                    ["Inbound call", "$0.028/min"],
-                    ["Outbound call", "$0.035/min"],
-                    ["SMS", "$0.01/segment"],
-                    ["Chat message", "$0.002/message"],
-                    ["Phone number", "$1.89/month"],
-                  ].map(([label, price]) => (
-                    <li key={label} className="flex items-center justify-between">
-                      <span className="text-gray-600">{label}</span>
-                      <span className="font-medium text-black tabular-nums">{price}</span>
+                    "10 AI agents",
+                    "10 phone numbers",
+                    "2,000 included minutes",
+                    "Routing by team, location, or use case",
+                    "CRM/webhook handoff and analytics",
+                    "$4 usage credit bonus to test real calls",
+                    "Overage at $0.07/min",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
+                      <span>{item}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="mt-6 border-t border-gray-200 pt-4 text-xs text-gray-500">
-                  5-minute inbound call ≈ <span className="font-medium text-black">$0.45</span>.
-                  200 three-minute calls/month ≈{" "}
-                  <span className="font-medium text-black">$56.70</span> on top of $199.
+                  Usage credits still power provider costs. Add packs when your balance gets low.
                 </p>
                 <a
-                  href={GUEST_CHECKOUT_HREF}
+                  href={checkoutHref("scale")}
                   className={buttonClasses({
                     className: "mt-6 w-full",
                     variant: "secondary",
                   })}
                 >
-                  Start with credits
+                  Start Scale
                 </a>
               </div>
             </div>
@@ -925,7 +924,7 @@ export default function HomePage() {
                 Start free — pay when usage starts
               </a>
               <p className="text-xs text-gray-500">
-                Start free · $15 credits when paid usage starts · $199/mo after 7 days · cancel before then to owe nothing more.
+                Start free · plans from $49/mo · $4 usage credits included for testing · cancel before billing starts.
               </p>
             </div>
           </div>
@@ -985,7 +984,7 @@ export default function HomePage() {
                   "Self-serve from the first click.",
                   "Outbound included.",
                   "Forward your number or port it.",
-                  "Free registration, $15 starter credits when paid usage starts, $199/mo after 7 days.",
+                  "Plans from $49/mo, 7-day trial, and $4 usage credits to test real calls.",
                   "Cancel anytime · no contract.",
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2.5">
@@ -1149,20 +1148,20 @@ export default function HomePage() {
             <div className="mt-10 divide-y divide-gray-200 rounded-2xl border border-gray-200 bg-white">
               {[
                 {
-                  q: "Is the $15 a fee? What does it actually pay for?",
-                  a: "It is not a fee. The $15 starter credit pack is added to your account as usage credits and is only spent when your agent makes calls, sends SMS, registers a phone number, or hits paid API usage.",
+                  q: "Do I have to buy credits immediately?",
+                  a: "No. Paid plan checkout starts a 7-day trial and adds $4 in usage credits so you can test real calls first. Free accounts can buy credit packs when they are ready to run paid usage.",
                 },
                 {
                   q: "So what does SmartLine actually charge me?",
-                  a: "Registration is free. The $15 starter pack becomes usage credits. The subscription is $199/mo after the 7-day Pro trial unless you cancel before it starts. Usage like voice minutes, SMS, and phone numbers is deducted from your credit balance at cost plus a small margin.",
+                  a: "Registration is free. Paid plans are $49/mo, $149/mo, or $299/mo after the 7-day trial unless you cancel before billing starts. Usage like voice minutes, SMS, and phone numbers is deducted from your credit balance.",
                 },
                 {
-                  q: "When am I billed the $199/month?",
-                  a: "After the 7-day window ends. The subscription is month to month from there. You can cancel inside the 7-day window and you are never billed the $199. Launch testers: enter code TESTER at Stripe Checkout for $150 off your first month ($49 instead of $199). Your $15 starter credits stay $15.",
+                  q: "When am I billed for the monthly plan?",
+                  a: "After the 7-day window ends. The subscription is month to month from there. You can cancel inside the 7-day window and you are not billed for the monthly plan.",
                 },
                 {
                   q: "Is there a longer free trial?",
-                  a: "You can explore for free before paid provider actions. The 7-day Pro trial starts when you load the first $15 credit pack, which is how you register a real phone line and test real calls.",
+                  a: "You can explore for free before paid provider actions. The 7-day plan trial starts when you choose Starter, Growth, or Scale. If you stay on the free account, buy usage credits before running provider-cost actions.",
                 },
                 {
                   q: "Can I keep my current number?",
@@ -1186,7 +1185,7 @@ export default function HomePage() {
                 },
                 {
                   q: "What if I want to stop?",
-                  a: "Cancel from your account in one click. Stop inside the 7-day window and you are never billed the $199. Stop after that and the current month finishes out \u2014 no clawback, no contract.",
+                  a: "Cancel from your account in one click. Stop inside the 7-day window and you are not billed for the monthly plan. Stop after that and the current month finishes out \u2014 no clawback, no contract.",
                 },
                 {
                   q: "What about my data?",

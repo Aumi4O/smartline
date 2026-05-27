@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { activateSubscription, cancelSubscription } from "@/lib/billing/stripe-service";
+import {
+  activateSubscriptionTier,
+  cancelSubscription,
+} from "@/lib/billing/stripe-service";
 import { addCredits } from "@/lib/billing/credits";
 import {
   sendCreditPurchaseEmail,
@@ -72,14 +75,18 @@ export async function POST(req: NextRequest) {
         type === "activation_trial" ||
         type === "guest_activation_trial"
       ) {
-        const amountCents = parseInt(session.metadata?.amountCents || "1500", 10);
+        const amountCents = parseInt(session.metadata?.amountCents || "0", 10);
+        const creditType =
+          session.metadata?.creditType === "bonus" ? "bonus" : "purchase";
         if (amountCents > 0) {
           await addCredits(
             orgId,
             amountCents,
-            `Activation — $${(amountCents / 100).toFixed(2)} usage credits`,
-            "purchase",
-            { stripeSessionId: session.id }
+            creditType === "bonus"
+              ? `Plan trial bonus — $${(amountCents / 100).toFixed(2)} usage credits`
+              : `Activation — $${(amountCents / 100).toFixed(2)} usage credits`,
+            creditType,
+            { stripeSessionId: session.id, tier: session.metadata?.tier }
           );
         }
         await activateOrg(orgId);
@@ -96,13 +103,21 @@ export async function POST(req: NextRequest) {
               metadata: { orgId, source: "guest_checkout" },
             });
           }
-          await activateSubscription(orgId, session.subscription as string);
+          await activateSubscriptionTier(
+            orgId,
+            session.subscription as string,
+            session.metadata?.tier
+          );
         }
         await sendTrialStartedEmail(billingEmail, amountCents);
       }
 
       if (type === "subscription" && session.subscription) {
-        await activateSubscription(orgId, session.subscription as string);
+        await activateSubscriptionTier(
+          orgId,
+          session.subscription as string,
+          session.metadata?.tier
+        );
         await sendSubscriptionStartedEmail(billingEmail);
       }
 
@@ -134,7 +149,7 @@ export async function POST(req: NextRequest) {
       const endedStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
 
       if (proStatuses.has(status)) {
-        await activateSubscription(orgId, sub.id);
+        await activateSubscriptionTier(orgId, sub.id, sub.metadata?.tier);
       } else if (endedStatuses.has(status)) {
         await cancelSubscription(orgId);
       }

@@ -3,15 +3,12 @@
  * Usage prices include a 20% platform markup over raw provider costs, plus
  * enough internal payment-fee coverage to protect the usable cash collected.
  *
- * STARTER CREDITS MODEL:
+ * CREDITS MODEL:
  *   - Registration is free. Users can create an org, profile, and agent
  *     before paying.
- *   - The first provider-cost action loads a $15 starter credit pack
- *     (NOT a service fee — the pack amount lands in the org's credit balance).
- *   - Loading credits also kicks off a 7-day Pro trial; Pro auto-starts
- *     at $199/mo after the trial.
- *   - Cancel in the Customer Portal before trial ends to avoid the
- *     first $199. The $15 starter credits are kept either way.
+ *   - Free users who trigger provider-cost actions buy usage credit packs.
+ *   - Paid-plan checkout starts a 7-day trial and grants a small usage
+ *     credit bonus so they can test calls without buying a pack immediately.
  */
 
 export const MARKUP = 1.2;
@@ -22,15 +19,55 @@ export const CREDIT_PACK_PAYMENT_FEE_RESERVE_CENTS = 30;
 /** Cents loaded as starter usage credits at sign-up. Renamed from
  *  "activation amount" for clarity — this is not a fee, it is credit. */
 export const ACTIVATION_AMOUNT_CENTS = 1500;
+export const PLAN_TRIAL_CREDIT_CENTS = 400;
 
 /** Pro subscription trial in Checkout (first $199 is after this many days). */
 export const PRO_TRIAL_DAYS = 7;
 
+export const SUBSCRIPTION_TIERS = {
+  starter: {
+    key: "starter",
+    name: "SmartLine Starter",
+    monthlyPriceCents: 4900,
+    includedAgents: 1,
+    includedPhoneNumbers: 1,
+    includedMinutes: 100,
+    overagePerMinuteCents: 15,
+    description: "Prove one AI call flow with missed-call capture.",
+    stripePriceEnv: "STRIPE_STARTER_PRICE_ID",
+  },
+  growth: {
+    key: "growth",
+    name: "SmartLine Growth",
+    monthlyPriceCents: 14900,
+    includedAgents: 3,
+    includedPhoneNumbers: 3,
+    includedMinutes: 500,
+    overagePerMinuteCents: 10,
+    description: "Capture, qualify, and follow up with more leads.",
+    stripePriceEnv: "STRIPE_GROWTH_PRICE_ID",
+  },
+  scale: {
+    key: "scale",
+    name: "SmartLine Scale",
+    monthlyPriceCents: 29900,
+    includedAgents: 10,
+    includedPhoneNumbers: 10,
+    includedMinutes: 2000,
+    overagePerMinuteCents: 7,
+    description: "Run higher-volume and multi-flow call systems.",
+    stripePriceEnv: "STRIPE_SCALE_PRICE_ID",
+  },
+} as const;
+
+export type SubscriptionTierKey = keyof typeof SUBSCRIPTION_TIERS;
+export const DEFAULT_SUBSCRIPTION_TIER: SubscriptionTierKey = "growth";
+
 export const PLANS = {
   pro: {
-    name: "SmartLine Pro",
-    monthlyPriceCents: 19900,
-    includedAgents: 3,
+    name: SUBSCRIPTION_TIERS.growth.name,
+    monthlyPriceCents: SUBSCRIPTION_TIERS.growth.monthlyPriceCents,
+    includedAgents: SUBSCRIPTION_TIERS.growth.includedAgents,
     includedStorage: "5GB",
   },
 } as const;
@@ -43,10 +80,17 @@ export const PAYG_LIMITS = {
 } as const;
 
 export const PRO_LIMITS = {
-  maxAgents: 3,
-  maxPhoneNumbers: 10,
+  maxAgents: SUBSCRIPTION_TIERS.growth.includedAgents,
+  maxPhoneNumbers: SUBSCRIPTION_TIERS.growth.includedPhoneNumbers,
   maxDocuments: 100,
   maxStorageMb: 5120,
+} as const;
+
+export const SCALE_LIMITS = {
+  maxAgents: SUBSCRIPTION_TIERS.scale.includedAgents,
+  maxPhoneNumbers: SUBSCRIPTION_TIERS.scale.includedPhoneNumbers,
+  maxDocuments: 250,
+  maxStorageMb: 10240,
 } as const;
 
 export const CREDIT_PACKS = [
@@ -96,6 +140,15 @@ export function centsToUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+export function getSubscriptionTier(
+  value: string | null | undefined
+): (typeof SUBSCRIPTION_TIERS)[SubscriptionTierKey] {
+  if (value && value in SUBSCRIPTION_TIERS) {
+    return SUBSCRIPTION_TIERS[value as SubscriptionTierKey];
+  }
+  return SUBSCRIPTION_TIERS[DEFAULT_SUBSCRIPTION_TIER];
+}
+
 export function stripeFeeForCharge(chargeCents: number): number {
   if (chargeCents <= 0) return 0;
   return Math.ceil(chargeCents * STRIPE_PERCENT_FEE + STRIPE_FIXED_FEE_CENTS);
@@ -103,10 +156,16 @@ export function stripeFeeForCharge(chargeCents: number): number {
 
 export type PlanStatus = "inactive" | "active" | "pro" | "cancelled";
 
+export function getPlanLimits(plan: string) {
+  if (plan === "scale") return SCALE_LIMITS;
+  if (plan === "growth" || plan === "pro") return PRO_LIMITS;
+  return PAYG_LIMITS;
+}
+
 export function isActivated(planStatus: string): boolean {
   return planStatus === "active" || planStatus === "pro";
 }
 
 export function isPro(plan: string): boolean {
-  return plan === "pro";
+  return plan === "pro" || plan === "growth" || plan === "scale";
 }

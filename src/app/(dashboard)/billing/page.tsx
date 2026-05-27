@@ -91,6 +91,8 @@ export default function BillingPage() {
   const balance = data?.balanceCents ?? 0;
   const isInactive = planStatus === "inactive";
   const isPro = plan === "pro";
+  const isPaidPlan = isPro || plan === "growth" || plan === "scale";
+  const planLabel = plan === "scale" ? "Scale" : isPaidPlan ? "Growth" : "Starter";
 
   return (
     <div>
@@ -105,9 +107,9 @@ export default function BillingPage() {
         {isInactive && (
           <Card>
             <CardHeader>
-              <CardTitle>Load your $15 starter credits</CardTitle>
+              <CardTitle>Start your Growth trial</CardTitle>
               <CardDescription>
-                Registration is free. Load credits only when SmartLine starts paying providers for you, like registering a phone number or running API usage. The full $15 becomes usage credits, and it unlocks a 7-day Pro trial. Pro auto-starts at $199/mo after the trial unless you cancel.
+                Registration is free. Growth starts with a 7-day trial and $4 usage credits so you can test real calls before buying a credit pack. Growth is $149/mo after the trial unless you cancel.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -115,7 +117,7 @@ export default function BillingPage() {
                 <ActivateButton />
               </div>
               <p className="mt-3 text-xs text-gray-400">
-                Have a launch code? Enter <span className="font-mono text-gray-600">TESTER</span> at Stripe Checkout for $150 off your first month. Your $15 starter credits stay $15.
+                Usage credits still cover phone numbers, voice minutes, SMS, and paid API. Add credit packs when your balance gets low.
               </p>
             </CardContent>
           </Card>
@@ -131,13 +133,17 @@ export default function BillingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold text-black">
-                    {isPro ? "Pro" : "Starter"}
+                    {planLabel}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {isPro ? "$199/mo — 3 agents, 5GB storage, priority support" : "Pay-as-you-go — 1 agent, 100MB storage"}
+                    {plan === "scale"
+                      ? "$299/mo Scale — 10 agents, 10 numbers, 2,000 included minutes"
+                      : isPaidPlan
+                        ? "$149/mo Growth — 3 agents, 3 numbers, 500 included minutes"
+                        : "Pay-as-you-go — 1 agent, 100MB storage"}
                   </p>
                 </div>
-                {isPro ? (
+                {isPaidPlan ? (
                   <div className="flex flex-col items-end gap-2">
                     <Button variant="secondary" onClick={handlePortal}>
                       Manage subscription
@@ -151,7 +157,7 @@ export default function BillingPage() {
                   </div>
                 ) : (
                   <Button onClick={handleSubscribe}>
-                    Upgrade to Pro — $199/mo
+                    Upgrade to Growth — $149/mo
                   </Button>
                 )}
               </div>

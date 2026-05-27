@@ -64,7 +64,7 @@ export async function initiateOutboundCall(
   }
   const balance = await getBalance(campaign.orgId);
   if (org.planStatus === "inactive" || balance <= 0) {
-    return { success: false, error: "Load $15 starter credits before running outbound calls" };
+    return { success: false, error: "Add usage credits before running outbound calls" };
   }
 
   let fromNumber: string | null = null;

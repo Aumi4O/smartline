@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import {
-  PLANS,
-  ACTIVATION_AMOUNT_CENTS,
+  PLAN_TRIAL_CREDIT_CENTS,
   PRO_TRIAL_DAYS,
-  centsToUsd,
+  getSubscriptionTier,
 } from "@/lib/pricing";
 import { requireOrg } from "@/lib/org";
 import {
   createSubscriptionCheckout,
   getOrCreateStripeCustomer,
+  subscriptionTierLineItem,
 } from "@/lib/billing/stripe-service";
 
 /**
- * Stripe Checkout for the first paid provider-cost action.
+ * Stripe Checkout for the public monthly plan path.
  *
- * - Creates a subscription Checkout: $199/mo Pro (with a 7-day trial) +
- *   a one-time $15 STARTER CREDIT PACK line. The $15 is not a fee — it
- *   lands as usage credits in the customer's account. Usage pricing carries
- *   internal fee coverage so provider spend is not underfunded. That matches our headline offer:
- *     "$15 credits when paid usage starts → 7 days full access → $199/mo"
- * - Promotion codes are enabled so the TESTER code works ($150 off the
- *   first month — does not discount the $15 starter credits).
+ * - Creates a subscription Checkout for Starter/Growth/Scale with a 7-day trial.
+ * - No credit pack is charged at signup. The webhook grants a small usage-credit
+ *   bonus so paid-plan customers can test calls before buying more credits.
+ * - Promotion codes are enabled.
  * - On success we land on /welcome?session_id={ID} which fetches the email
  *   from Stripe and auto-sends a magic sign-in link.
  *
@@ -42,6 +39,8 @@ export async function POST(req: NextRequest) {
     const { session, org } = await requireOrg();
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const url = new URL(req.url);
+    const tier = getSubscriptionTier(url.searchParams.get("tier"));
     const customerId = await getOrCreateStripeCustomer(
       org.id,
       session.user!.email!,
@@ -51,7 +50,8 @@ export async function POST(req: NextRequest) {
       org.id,
       customerId,
       `${appUrl}/dashboard?upgraded=1`,
-      `${appUrl}/billing`
+      `${appUrl}/billing`,
+      tier.key
     );
 
     return NextResponse.json({ url: checkout.url });
@@ -64,23 +64,8 @@ export async function POST(req: NextRequest) {
 async function handle(req: NextRequest) {
   const url = new URL(req.url);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
-  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
   const promoCode = url.searchParams.get("promo")?.trim().toUpperCase() || "";
-
-  const proLineItem = proPriceId
-    ? { price: proPriceId, quantity: 1 }
-    : {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: PLANS.pro.name,
-            description: `Full Pro access. $199/mo after a ${PRO_TRIAL_DAYS}-day trial — cancel before then to avoid subscription billing.`,
-          },
-          recurring: { interval: "month" as const },
-          unit_amount: PLANS.pro.monthlyPriceCents,
-        },
-        quantity: 1,
-      };
+  const tier = getSubscriptionTier(url.searchParams.get("tier"));
 
   try {
     // If a promo code was passed on the URL, look it up on Stripe and
@@ -102,6 +87,7 @@ async function handle(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      payment_method_collection: "always",
       // Only one of these can be set at a time. If we pre-applied a promo,
       // Stripe locks it in; otherwise we let the user type any code.
       ...(preAppliedPromotionId
@@ -111,28 +97,16 @@ async function handle(req: NextRequest) {
       // the email Stripe collects. Passing `customer_creation` here is
       // an error (`can only be used in payment mode`).
       billing_address_collection: "auto",
-      line_items: [
-        proLineItem,
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "$15 starter credits (not a fee)",
-              description:
-                `Loaded as ${centsToUsd(ACTIVATION_AMOUNT_CENTS)} in usage credits for calls, SMS and API usage.`,
-            },
-            unit_amount: ACTIVATION_AMOUNT_CENTS,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [subscriptionTierLineItem(tier.key)],
       subscription_data: {
         trial_period_days: PRO_TRIAL_DAYS,
-        metadata: { source: "guest_checkout" },
+        metadata: { source: "guest_checkout", tier: tier.key },
       },
       metadata: {
         type: "guest_activation_trial",
-        amountCents: String(ACTIVATION_AMOUNT_CENTS),
+        tier: tier.key,
+        amountCents: String(PLAN_TRIAL_CREDIT_CENTS),
+        creditType: "bonus",
         ...(promoCode ? { promoCode } : {}),
       },
       success_url: `${appUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,

@@ -4,7 +4,7 @@ import { createAgent, listAgents } from "@/lib/agents/agent-service";
 import { getBusinessProfile, buildSystemPrompt } from "@/lib/knowledge/business-profile";
 import { createDocument } from "@/lib/knowledge/knowledge-service";
 import { buildKnowledgeText } from "@/lib/knowledge/business-profile";
-import { isPro, PAYG_LIMITS, PRO_LIMITS } from "@/lib/pricing";
+import { getPlanLimits, isPro } from "@/lib/pricing";
 import { logAuditEvent } from "@/lib/compliance/audit";
 
 export async function GET() {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const { session, org } = await requireOrg();
 
     const existing = await listAgents(org.id);
-    const limit = isPro(org.plan) ? PRO_LIMITS.maxAgents : PAYG_LIMITS.maxAgents;
+    const limit = getPlanLimits(org.plan).maxAgents;
 
     if (existing.length >= limit) {
       return NextResponse.json(

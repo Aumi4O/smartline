@@ -9,9 +9,7 @@ import { provisionOrg } from "@/lib/provisioning/orchestrator";
 import { deductCredits, getBalance } from "@/lib/billing/credits";
 import {
   ACTIVATION_AMOUNT_CENTS,
-  isPro,
-  PAYG_LIMITS,
-  PRO_LIMITS,
+  getPlanLimits,
   USAGE_RATES,
 } from "@/lib/pricing";
 import {
@@ -36,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const existing = await listOrgPhoneNumbers(org.id);
     const activeNumbers = existing.filter((n) => n.status === "active");
-    const limit = isPro(org.plan) ? PRO_LIMITS.maxPhoneNumbers : PAYG_LIMITS.maxPhoneNumbers;
+    const limit = getPlanLimits(org.plan).maxPhoneNumbers;
 
     if (activeNumbers.length >= limit) {
       return NextResponse.json(

@@ -5,8 +5,10 @@ import {
   STRIPE_PERCENT_FEE,
   CREDIT_PACK_PAYMENT_FEE_RESERVE_CENTS,
   ACTIVATION_AMOUNT_CENTS,
+  PLAN_TRIAL_CREDIT_CENTS,
   PRO_TRIAL_DAYS,
   PLANS,
+  SUBSCRIPTION_TIERS,
   PAYG_LIMITS,
   PRO_LIMITS,
   CREDIT_PACKS,
@@ -32,12 +34,22 @@ describe("pricing constants", () => {
     expect(ACTIVATION_AMOUNT_CENTS).toBe(1500);
   });
 
-  it("Pro checkout trial is 7 days before first $199", () => {
+  it("paid plan checkout grants $4 of trial usage credits", () => {
+    expect(PLAN_TRIAL_CREDIT_CENTS).toBe(400);
+  });
+
+  it("paid plan checkout trial is 7 days", () => {
     expect(PRO_TRIAL_DAYS).toBe(7);
   });
 
-  it("pro plan is $199/month", () => {
-    expect(PLANS.pro.monthlyPriceCents).toBe(19900);
+  it("has $49/$149/$299 monthly tiers", () => {
+    expect(SUBSCRIPTION_TIERS.starter.monthlyPriceCents).toBe(4900);
+    expect(SUBSCRIPTION_TIERS.growth.monthlyPriceCents).toBe(14900);
+    expect(SUBSCRIPTION_TIERS.scale.monthlyPriceCents).toBe(29900);
+  });
+
+  it("legacy pro alias points at Growth", () => {
+    expect(PLANS.pro.monthlyPriceCents).toBe(14900);
     expect(PLANS.pro.includedAgents).toBeGreaterThan(0);
   });
 
@@ -82,7 +94,7 @@ describe("Stripe fee accounting", () => {
 describe("centsToUsd", () => {
   it("formats whole dollars", () => {
     expect(centsToUsd(500)).toBe("$5.00");
-    expect(centsToUsd(19900)).toBe("$199.00");
+    expect(centsToUsd(14900)).toBe("$149.00");
   });
 
   it("formats cents", () => {
@@ -131,8 +143,10 @@ describe("isActivated", () => {
 });
 
 describe("isPro", () => {
-  it("returns true only for 'pro'", () => {
+  it("returns true for paid plan names", () => {
     expect(isPro("pro")).toBe(true);
+    expect(isPro("growth")).toBe(true);
+    expect(isPro("scale")).toBe(true);
     expect(isPro("active")).toBe(false);
     expect(isPro("starter")).toBe(false);
     expect(isPro("")).toBe(false);

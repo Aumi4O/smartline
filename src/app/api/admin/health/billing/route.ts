@@ -11,7 +11,7 @@ import { stripe } from "@/lib/stripe";
  * Returns a JSON report:
  *   - STRIPE_SECRET_KEY present
  *   - STRIPE_WEBHOOK_SECRET present
- *   - STRIPE_PRO_PRICE_ID present and resolves at Stripe
+ *   - Optional tier Stripe price ids present and resolve at Stripe
  *   - OPENAI_WEBHOOK_SECRET present
  *   - TESTER promo code exists & active
  *
@@ -38,8 +38,9 @@ export async function GET() {
     env: {
       STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
       STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
-      STRIPE_PRO_PRICE_ID: !!process.env.STRIPE_PRO_PRICE_ID,
-      STRIPE_PRO_PRODUCT_ID: !!process.env.STRIPE_PRO_PRODUCT_ID,
+      STRIPE_STARTER_PRICE_ID: !!process.env.STRIPE_STARTER_PRICE_ID,
+      STRIPE_GROWTH_PRICE_ID: !!process.env.STRIPE_GROWTH_PRICE_ID,
+      STRIPE_SCALE_PRICE_ID: !!process.env.STRIPE_SCALE_PRICE_ID,
       OPENAI_WEBHOOK_SECRET: !!process.env.OPENAI_WEBHOOK_SECRET,
       OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
       OPENAI_SIP_PROJECT_ID: !!process.env.OPENAI_SIP_PROJECT_ID,
@@ -47,12 +48,14 @@ export async function GET() {
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || null,
     },
     stripe: {
-      priceId: process.env.STRIPE_PRO_PRICE_ID || null,
-      priceResolved: false as boolean,
-      priceActive: false as boolean,
-      priceAmount: null as number | null,
-      priceCurrency: null as string | null,
-      priceRecurring: null as string | null,
+      prices: [] as Array<{
+        tier: string;
+        priceId: string;
+        active: boolean;
+        amount: number | null;
+        currency: string;
+        recurring: string | null;
+      }>,
       testerPromoActive: false as boolean,
       testerPromoCode: null as string | null,
       testerCouponId: null as string | null,
@@ -66,13 +69,21 @@ export async function GET() {
   };
 
   try {
-    if (process.env.STRIPE_PRO_PRICE_ID) {
-      const price = await stripe.prices.retrieve(process.env.STRIPE_PRO_PRICE_ID);
-      report.stripe.priceResolved = true;
-      report.stripe.priceActive = price.active;
-      report.stripe.priceAmount = price.unit_amount;
-      report.stripe.priceCurrency = price.currency;
-      report.stripe.priceRecurring = price.recurring?.interval || null;
+    for (const [tier, priceId] of [
+      ["starter", process.env.STRIPE_STARTER_PRICE_ID],
+      ["growth", process.env.STRIPE_GROWTH_PRICE_ID],
+      ["scale", process.env.STRIPE_SCALE_PRICE_ID],
+    ] as const) {
+      if (!priceId) continue;
+      const price = await stripe.prices.retrieve(priceId);
+      report.stripe.prices.push({
+        tier,
+        priceId,
+        active: price.active,
+        amount: price.unit_amount,
+        currency: price.currency,
+        recurring: price.recurring?.interval || null,
+      });
     }
 
     // In Stripe SDK v22 the PromotionCode type nests the coupon as
