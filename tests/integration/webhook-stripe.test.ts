@@ -336,6 +336,42 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     expect(updated.stripeSubscriptionId).toBe("sub_test_xyz");
   });
 
+  it("checkout.session.completed (subscription) emails the checkout email", async () => {
+    const db = await getTestDb();
+    const org = await createOrg(db, { planStatus: "active", plan: "starter" });
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_subscription" });
+    });
+
+    queueEvent({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_test_sub_email",
+          customer_details: { email: "ScaleBuyer@Test.Local" },
+          metadata: { orgId: org.id, type: "subscription", tier: "scale" },
+          subscription: "sub_test_scale_email",
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "scalebuyer@test.local",
+      subject: "Your SmartLine plan is active",
+      text: expect.stringContaining("Scale is $299.00/mo"),
+    });
+  });
+
   it("customer.subscription.updated past_due → still Pro (dunning)", async () => {
     const db = await getTestDb();
     const org = await createOrg(db, { planStatus: "pro", plan: "pro" });
@@ -446,6 +482,41 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     expect(updated.stripeSubscriptionId).toBeNull();
   });
 
+  it("customer.subscription.deleted emails the org owner", async () => {
+    const db = await getTestDb();
+    const user = await createUser(db, { email: "cancel-owner@test.local" });
+    const org = await createOrg(db, { planStatus: "pro", plan: "scale" });
+    await addMembership(db, user.id, org.id, "owner");
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_cancel" });
+    });
+
+    queueEvent({
+      type: "customer.subscription.deleted",
+      data: {
+        object: {
+          id: "sub_test_del_email",
+          metadata: { orgId: org.id },
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "cancel-owner@test.local",
+      subject: "SmartLine plan was cancelled",
+    });
+  });
+
   it("customer.subscription.trial_will_end emails the org owner", async () => {
     const db = await getTestDb();
     const user = await createUser(db, { email: "trial-owner@test.local" });
@@ -494,12 +565,46 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     expect(status).toBe(200);
   });
 
-  it("invoice.payment_failed is acknowledged but does not crash", async () => {
+  it("invoice.payment_failed emails the org owner", async () => {
+    const db = await getTestDb();
+    const user = await createUser(db, { email: "billing-owner@test.local" });
+    const org = await createOrg(db, { planStatus: "pro", plan: "growth" });
+    await addMembership(db, user.id, org.id, "owner");
+    const emails: unknown[] = [];
+
+    registerFetchMock("api.mailgun.net", (_url, init) => {
+      emails.push(Object.fromEntries(new URLSearchParams(String(init?.body))));
+      return jsonResponse({ id: "email_test_payment_failed" });
+    });
+
     queueEvent({
       type: "invoice.payment_failed",
       data: {
         object: {
           id: "in_test_1",
+          subscription_details: { metadata: { orgId: org.id } },
+        },
+      },
+    });
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({
+      to: "billing-owner@test.local",
+      subject: "SmartLine payment failed",
+    });
+  });
+
+  it("invoice.payment_failed with invalid org id is acknowledged but does not crash", async () => {
+    queueEvent({
+      type: "invoice.payment_failed",
+      data: {
+        object: {
+          id: "in_test_invalid_org",
           subscription_details: { metadata: { orgId: "org-xyz" } },
         },
       },
