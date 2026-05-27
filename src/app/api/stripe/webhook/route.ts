@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
             session.metadata?.tier
           );
         }
-        await sendTrialStartedEmail(billingEmail, amountCents);
+        await sendTrialStartedEmail(billingEmail, amountCents, session.metadata?.tier);
       }
 
       if (type === "subscription" && session.subscription) {
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
           session.subscription as string,
           session.metadata?.tier
         );
-        await sendSubscriptionStartedEmail(billingEmail);
+        await sendSubscriptionStartedEmail(billingEmail, session.metadata?.tier);
       }
 
       if (type === "credits") {
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription;
       const orgId = sub.metadata?.orgId;
       if (orgId) {
-        await sendTrialEndingEmail(await getOrgOwnerEmail(orgId));
+        await sendTrialEndingEmail(await getOrgOwnerEmail(orgId), sub.metadata?.tier);
       }
       break;
     }

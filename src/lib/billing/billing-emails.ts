@@ -1,9 +1,10 @@
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import {
   ACTIVATION_AMOUNT_CENTS,
-  PLANS,
   PRO_TRIAL_DAYS,
+  type SubscriptionTierKey,
   centsToUsd,
+  getSubscriptionTier,
 } from "@/lib/pricing";
 
 const resendApiKey = process.env.AUTH_RESEND_KEY || process.env.RESEND_API_KEY;
@@ -26,6 +27,13 @@ type BillingEmail = {
 function billingUrl() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://smartlineagent.com";
   return `${appUrl}/billing`;
+}
+
+function tierLine(tierKey?: SubscriptionTierKey | string | null) {
+  const tier = getSubscriptionTier(tierKey);
+  return `${tier.name.replace("SmartLine ", "")} is ${centsToUsd(
+    tier.monthlyPriceCents
+  )}/mo`;
 }
 
 function toHtml(text: string) {
@@ -110,7 +118,8 @@ async function sendMailgunEmail({
 
 export async function sendTrialStartedEmail(
   to: string | null | undefined,
-  creditAmountCents = ACTIVATION_AMOUNT_CENTS
+  creditAmountCents = ACTIVATION_AMOUNT_CENTS,
+  tierKey?: SubscriptionTierKey | string | null
 ) {
   await sendBillingEmail({
     to,
@@ -120,7 +129,7 @@ export async function sendTrialStartedEmail(
       creditAmountCents > 0
         ? `${centsToUsd(creditAmountCents)} in usage credits has been loaded for calls, SMS and API usage.`
         : "You can add usage credits any time before running paid calls, SMS or API usage.",
-      `Your ${PRO_TRIAL_DAYS}-day trial includes paid-plan access. After the trial, Growth is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
+      `Your ${PRO_TRIAL_DAYS}-day trial includes paid-plan access. After the trial, ${tierLine(tierKey)} unless you cancel before billing starts.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
@@ -141,25 +150,31 @@ export async function sendCreditPurchaseEmail(
   });
 }
 
-export async function sendSubscriptionStartedEmail(to: string | null | undefined) {
+export async function sendSubscriptionStartedEmail(
+  to: string | null | undefined,
+  tierKey?: SubscriptionTierKey | string | null
+) {
   await sendBillingEmail({
     to,
     subject: "Your SmartLine plan is active",
     text: [
       "Your SmartLine subscription is active.",
-      `Growth is ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo and renews automatically until cancelled.`,
+      `${tierLine(tierKey)} and renews automatically until cancelled.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });
 }
 
-export async function sendTrialEndingEmail(to: string | null | undefined) {
+export async function sendTrialEndingEmail(
+  to: string | null | undefined,
+  tierKey?: SubscriptionTierKey | string | null
+) {
   await sendBillingEmail({
     to,
     subject: "Your SmartLine plan trial ends soon",
     text: [
       "Your SmartLine plan trial is ending soon.",
-      `After the trial, Growth continues at ${centsToUsd(PLANS.pro.monthlyPriceCents)}/mo unless you cancel before billing starts.`,
+      `After the trial, ${tierLine(tierKey)} unless you cancel before billing starts.`,
       `Manage billing: ${billingUrl()}`,
     ].join("\n\n"),
   });

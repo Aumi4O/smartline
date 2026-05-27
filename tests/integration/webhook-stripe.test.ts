@@ -175,7 +175,12 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
         object: {
           id: "cs_test_activation_email",
           customer_details: { email: "Buyer@Test.Local" },
-          metadata: { orgId: org.id, type: "activation_trial", amountCents: "1500" },
+          metadata: {
+            orgId: org.id,
+            type: "activation_trial",
+            amountCents: "400",
+            tier: "starter",
+          },
           subscription: "sub_test_trialing_email",
         },
       },
@@ -191,6 +196,12 @@ describe("POST /api/stripe/webhook — checkout.session.completed (activation)",
     expect(emails[0]).toMatchObject({
       to: "buyer@test.local",
       subject: "Your SmartLine trial is active",
+    });
+    expect(emails[0]).toMatchObject({
+      text: expect.stringContaining("Starter is $49.00/mo"),
+    });
+    expect(emails[0]).toMatchObject({
+      text: expect.stringContaining("$4.00 in usage credits"),
     });
   });
 
@@ -305,7 +316,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
       data: {
         object: {
           id: "cs_test_sub_1",
-          metadata: { orgId: org.id, type: "subscription" },
+          metadata: { orgId: org.id, type: "subscription", tier: "scale" },
           subscription: "sub_test_xyz",
         },
       },
@@ -320,7 +331,7 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
     const { organizations } = await import("@/lib/db/schema");
     const { eq } = await import("drizzle-orm");
     const [updated] = await db.select().from(organizations).where(eq(organizations.id, org.id));
-    expect(updated.plan).toBe("growth");
+    expect(updated.plan).toBe("scale");
     expect(updated.planStatus).toBe("pro");
     expect(updated.stripeSubscriptionId).toBe("sub_test_xyz");
   });
