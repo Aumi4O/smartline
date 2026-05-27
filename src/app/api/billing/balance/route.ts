@@ -24,6 +24,7 @@ export async function GET() {
       balanceCents: balance,
       plan: org.plan,
       planStatus: org.planStatus,
+      stripeSubscriptionId: org.stripeSubscriptionId,
       freeMinutes: {
         allowance: freeMinutes.allowance,
         usedSec: freeMinutes.usedSec,

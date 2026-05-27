@@ -17,18 +17,18 @@ import { Button } from "@/components/ui/button";
  * It mirrors SmartLine's money model exactly so the UI never lies about
  * what's being charged:
  *
- *   1. Growth plan trial         → $149/mo after a 7-day trial, with a
+ *   1. Starter plan trial        → $49/mo after a 7-day trial, with a
  *                                  small usage-credit bonus for testing
- *                                  (POST /api/billing/activate when
- *                                  signed in; GET /api/billing/checkout
- *                                  otherwise)
  *
- *   2. Scale $299/mo             → for active Starter/Growth orgs upgrading
- *                                  (POST /api/billing/checkout?tier=scale
+ *   2. Growth plan trial         → $149/mo after a 7-day trial, with a
+ *                                  small usage-credit bonus for testing
+ *
+ *   3. Scale $299/mo             → for active Starter/Growth orgs upgrading
+ *                                  (POST /api/billing/checkout?tier={tier}
  *                                  → 303 to Stripe; we navigate top-level
  *                                  so the redirect is followed cleanly)
  *
- *   3. Credit packs ($15–$250)   → covers phone, SMS, and paid API
+ *   4. Credit packs ($15–$250)   → covers phone, SMS, and paid API
  *                                  usage. POST /api/billing/credits with
  *                                  { amountCents }. Required to actually
  *                                  *use* the product — plans raise limits,
@@ -59,7 +59,7 @@ export interface PricingModalOptions {
    * Which card to emphasise. Defaults to "auto" (picks based on plan).
    * Set to "credits" when the user landed here from a paid-action gate.
    */
-  emphasis?: "auto" | "trial" | "pro" | "credits";
+  emphasis?: "auto" | "starter" | "trial" | "pro" | "credits";
 }
 
 interface PricingModalContextValue {
@@ -90,7 +90,10 @@ const CREDIT_PACKS = [
 interface BillingData {
   plan: string;
   planStatus: string;
+  stripeSubscriptionId?: string | null;
 }
+
+type PlanTier = "starter" | "growth" | "scale";
 
 async function safeJson(
   url: string,
@@ -163,61 +166,35 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
     : false;
   const isPro =
     billing?.plan === "pro" || billing?.plan === "growth" || billing?.plan === "scale";
-  const isInactive = billing?.planStatus === "inactive";
+  const currentPlan = billing?.plan ?? "starter";
+  const hasPaidSubscription = Boolean(billing?.stripeSubscriptionId);
+  const isStarter = currentPlan === "starter";
+  const isGrowth = currentPlan === "growth" || currentPlan === "pro";
+  const isScale = currentPlan === "scale";
 
-  function handleTrial() {
-    setBusy("trial");
+  function handlePlan(tier: PlanTier) {
+    const id = `plan-${tier}`;
+    setBusy(id);
     setErrorMsg(null);
 
-    if (opts?.checkoutUrl && !isActivated) {
-      window.location.href = opts.checkoutUrl;
-      return;
-    }
-
-    // /api/billing/activate is the signed-in trial-start endpoint. It
-    // returns JSON { url } pointing at Stripe Checkout (subscription,
-    // 7-day trial, $0 today, Growth billing after).
-    if (billing && isInactive) {
+    // Signed-in users get JSON so dashboard fetch callers can redirect
+    // explicitly. Guests use the public route, which redirects to Stripe.
+    if (billing) {
       void (async () => {
-        const data = await safeJson("/api/billing/activate", { method: "POST" });
+        const data = await safeJson(`/api/billing/checkout?tier=${tier}`, {
+          method: "POST",
+        });
         if (data.url) {
           window.location.href = data.url;
           return;
         }
-        setErrorMsg(data.error || "Could not start the trial");
+        setErrorMsg(data.error || "Could not start plan checkout");
         setBusy(null);
       })();
       return;
     }
 
-    // Guest or already-active — both work via the guest Checkout route
-    // (it 303-redirects to the same trial-only Stripe session). We
-    // navigate top-level so the redirect is followed.
-    window.location.href = "/api/billing/checkout";
-  }
-
-  function handlePro() {
-    if (isInactive) {
-      handleTrial();
-      return;
-    }
-
-    setBusy("pro");
-    setErrorMsg(null);
-    if (!billing) {
-      window.location.href = "/api/billing/checkout";
-      return;
-    }
-
-    void (async () => {
-      const data = await safeJson("/api/billing/checkout?tier=scale", { method: "POST" });
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setErrorMsg(data.error || "Could not start Pro checkout");
-      setBusy(null);
-    })();
+    window.location.href = `/api/billing/checkout?tier=${tier}`;
   }
 
   async function handleCreditPack(amountCents: number) {
@@ -269,7 +246,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
           onClick={close}
         >
           <div
-            className="relative max-h-[92vh] w-full max-w-[1040px] overflow-y-auto rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:p-8"
+            className="relative max-h-[92vh] w-full max-w-[1200px] overflow-y-auto rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -319,8 +296,62 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
               </p>
             )}
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {/* Card 1 — Growth plan trial */}
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {/* Card 1 — Starter plan trial */}
+              <div
+                className={`flex flex-col rounded-2xl border-2 p-5 ${emphasis === "starter" ? "" : "border-gray-200"}`}
+                style={
+                  emphasis === "starter" ? { borderColor: ACCENT } : undefined
+                }
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <p
+                    className="text-[10px] font-semibold uppercase tracking-widest"
+                    style={{ color: ACCENT }}
+                  >
+                    Starter plan trial
+                  </p>
+                  {isStarter && hasPaidSubscription && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: "rgba(0, 102, 255, 0.1)",
+                        color: ACCENT,
+                      }}
+                    >
+                      Current
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-black">
+                  $49
+                  <span className="ml-1 text-sm font-normal text-gray-400">
+                    /mo
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  7-day trial, then monthly billing unless cancelled. Includes $4 usage credits to test real calls.
+                </p>
+                <ul className="mt-4 flex-1 space-y-2 text-xs text-gray-600">
+                  <li>• 1 agent · 1 number · 100 included minutes</li>
+                  <li>• Missed-call capture and call summaries</li>
+                  <li>• Extra usage at $0.15/min through credits</li>
+                </ul>
+                <Button
+                  type="button"
+                  onClick={() => handlePlan("starter")}
+                  disabled={busy !== null || (isStarter && hasPaidSubscription)}
+                  className="mt-5 w-full"
+                >
+                  {busy === "plan-starter"
+                    ? "Opening Stripe..."
+                    : isStarter && hasPaidSubscription
+                      ? "Current plan"
+                      : "Start Starter trial ->"}
+                </Button>
+              </div>
+
+              {/* Card 2 — Growth plan trial */}
               <div
                 className={`flex flex-col rounded-2xl border-2 p-5 ${emphasis === "trial" ? "" : "border-gray-200"}`}
                 style={
@@ -362,21 +393,21 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                 </ul>
                 <Button
                   type="button"
-                  onClick={handleTrial}
-                  disabled={busy !== null || isActivated}
+                  onClick={() => handlePlan("growth")}
+                  disabled={busy !== null || (isGrowth && hasPaidSubscription)}
                   className="mt-5 w-full"
                 >
-                  {busy === "trial"
-                    ? "Opening Stripe…"
-                    : isPro
-                      ? "Already on Pro"
+                  {busy === "plan-growth"
+                    ? "Opening Stripe..."
+                    : isGrowth && hasPaidSubscription
+                      ? "Current plan"
                       : isActivated
-                        ? "Already activated"
-                        : "Start Growth trial →"}
+                        ? "Upgrade to Growth - $149/mo"
+                        : "Start Growth trial ->"}
                 </Button>
               </div>
 
-              {/* Card 2 — Scale plan */}
+              {/* Card 3 — Scale plan */}
               <div
                 className={`relative flex flex-col rounded-2xl p-5 text-white ${emphasis === "pro" ? "" : "border border-gray-700"}`}
                 style={{
@@ -390,7 +421,7 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                   className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white"
                   style={{ backgroundColor: ACCENT }}
                 >
-                  {isPro ? "Current plan" : "Main plan"}
+                  {isScale && hasPaidSubscription ? "Current plan" : "Main plan"}
                 </span>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                   Scale plan
@@ -409,21 +440,21 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                 </ul>
                 <Button
                   type="button"
-                  onClick={handlePro}
-                  disabled={busy !== null || isPro}
+                  onClick={() => handlePlan("scale")}
+                  disabled={busy !== null || (isScale && hasPaidSubscription)}
                   className="mt-5 w-full bg-white text-black hover:bg-gray-100"
                 >
-                  {busy === "pro"
-                    ? "Opening Stripe…"
-                    : isPro
-                      ? "You're on Pro"
+                  {busy === "plan-scale"
+                    ? "Opening Stripe..."
+                    : isScale && hasPaidSubscription
+                      ? "Current plan"
                       : isActivated
                         ? "Upgrade to Scale — $299/mo"
-                        : "Start Growth trial →"}
+                        : "Start Scale trial ->"}
                 </Button>
               </div>
 
-              {/* Card 3 — Credit packs (provider cost) */}
+              {/* Card 4 — Credit packs (provider cost) */}
               <div
                 className={`flex flex-col rounded-2xl p-5 ${emphasis === "credits" ? "border-2" : "border border-gray-200"}`}
                 style={
@@ -464,13 +495,9 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                         key={pack.amountCents}
                         type="button"
                         onClick={() => handleCreditPack(pack.amountCents)}
-                        disabled={busy !== null || !isActivated}
+                        disabled={busy !== null}
                         className="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-black disabled:cursor-not-allowed disabled:opacity-50"
-                        title={
-                          isActivated
-                            ? `Buy ${pack.label} in credits`
-                            : "Register and start a trial (or activate) before buying credits"
-                        }
+                        title={`Buy ${pack.label} in credits`}
                       >
                         <div>
                           <p className="text-sm font-semibold text-black">
@@ -485,13 +512,10 @@ export function PricingModalProvider({ children }: { children: ReactNode }) {
                     );
                   })}
                 </div>
-                {!isActivated && (
-                  <p className="mt-3 text-[10px] leading-snug text-gray-500">
-                    You need an active account before buying credits. Start the
-                    $15 starter credit pack first — the full amount becomes
-                    usage credits.
-                  </p>
-                )}
+                <p className="mt-3 text-[10px] leading-snug text-gray-500">
+                  Credits can be added anytime and are spent only on
+                  provider-cost usage.
+                </p>
               </div>
             </div>
 
