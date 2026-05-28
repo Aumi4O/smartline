@@ -631,6 +631,142 @@ describe("POST /api/stripe/webhook — subscription lifecycle", () => {
   });
 });
 
+describe("POST /api/stripe/webhook — unpaid customer capture", () => {
+  it("customer.created creates an inactive Supabase user/org for guest Stripe customers", async () => {
+    const db = await getTestDb();
+
+    queueEvent({
+      type: "customer.created",
+      data: {
+        object: {
+          id: "cus_test_guest_lead",
+          email: "Lead@Test.Local",
+          metadata: {},
+          deleted: false,
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    const { users, orgMemberships, organizations, creditBalances } = await import(
+      "@/lib/db/schema"
+    );
+    const { eq } = await import("drizzle-orm");
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, "lead@test.local"));
+    expect(user).toBeTruthy();
+
+    const [membership] = await db
+      .select()
+      .from(orgMemberships)
+      .where(eq(orgMemberships.userId, user.id));
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, membership.orgId));
+    const [balance] = await db
+      .select()
+      .from(creditBalances)
+      .where(eq(creditBalances.orgId, org.id));
+
+    expect(org).toMatchObject({
+      plan: "starter",
+      planStatus: "inactive",
+      stripeCustomerId: "cus_test_guest_lead",
+    });
+    expect(balance.balanceCents).toBe(0);
+  });
+
+  it("customer.created with org metadata attaches the Stripe customer to the existing org", async () => {
+    const db = await getTestDb();
+    const org = await createOrg(db, { planStatus: "inactive" });
+
+    queueEvent({
+      type: "customer.created",
+      data: {
+        object: {
+          id: "cus_test_existing_org",
+          email: "existing@test.local",
+          metadata: { orgId: org.id },
+          deleted: false,
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    const { organizations } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [updated] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, org.id));
+
+    expect(updated.stripeCustomerId).toBe("cus_test_existing_org");
+    expect(updated.planStatus).toBe("inactive");
+  });
+
+  it("checkout.session.expired captures an unpaid guest checkout as inactive", async () => {
+    const db = await getTestDb();
+    mockStripeState.customers.set("cus_test_expired_guest", {
+      id: "cus_test_expired_guest",
+      email: "expired@test.local",
+      metadata: {},
+    });
+
+    queueEvent({
+      type: "checkout.session.expired",
+      data: {
+        object: {
+          id: "cs_test_expired_guest",
+          customer: "cus_test_expired_guest",
+          customer_details: null,
+          customer_email: null,
+          metadata: { type: "guest_activation_trial", tier: "starter" },
+        },
+      },
+    });
+
+    await invokeRoute(stripeWebhook.POST, {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: {},
+    });
+
+    const { users, orgMemberships, organizations } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, "expired@test.local"));
+    const [membership] = await db
+      .select()
+      .from(orgMemberships)
+      .where(eq(orgMemberships.userId, user.id));
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, membership.orgId));
+
+    expect(org).toMatchObject({
+      plan: "starter",
+      planStatus: "inactive",
+      stripeCustomerId: "cus_test_expired_guest",
+    });
+  });
+});
+
 describe("POST /api/stripe/webhook — malformed payloads", () => {
   it("handles non-JSON body when signature is missing (still 400)", async () => {
     const { status } = await invokeRoute(stripeWebhook.POST, {

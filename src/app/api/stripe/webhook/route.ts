@@ -46,6 +46,18 @@ export async function POST(req: NextRequest) {
   }
 
   switch (event.type) {
+    case "customer.created": {
+      const customer = event.data.object as Stripe.Customer;
+      await captureStripeCustomer(customer);
+      break;
+    }
+
+    case "checkout.session.expired": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await captureUnpaidCheckoutCustomer(session);
+      break;
+    }
+
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       let orgId = session.metadata?.orgId;
@@ -191,6 +203,58 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function captureStripeCustomer(customer: Stripe.Customer) {
+  if (customer.deleted) return;
+
+  const email = customer.email?.toLowerCase();
+  const orgId = customer.metadata?.orgId;
+
+  if (orgId && isUuid(orgId)) {
+    await db
+      .update(organizations)
+      .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
+      .where(eq(organizations.id, orgId));
+    return;
+  }
+
+  if (email) {
+    await provisionGuestAccount(email, customer.id);
+  }
+}
+
+async function captureUnpaidCheckoutCustomer(session: Stripe.Checkout.Session) {
+  const orgId = session.metadata?.orgId;
+  const email =
+    session.customer_details?.email?.toLowerCase() ??
+    session.customer_email?.toLowerCase();
+  const customerId =
+    typeof session.customer === "string" ? session.customer : session.customer?.id;
+
+  if (orgId && isUuid(orgId) && customerId) {
+    await db
+      .update(organizations)
+      .set({ stripeCustomerId: customerId, updatedAt: new Date() })
+      .where(eq(organizations.id, orgId));
+    return;
+  }
+
+  if (email) {
+    await provisionGuestAccount(email, customerId ?? null);
+    return;
+  }
+
+  if (!customerId) return;
+
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    if (!customer.deleted) {
+      await captureStripeCustomer(customer);
+    }
+  } catch (err) {
+    console.error("[stripe/webhook] customer lookup for expired checkout failed:", err);
+  }
 }
 
 async function getOrgOwnerEmail(orgId: string): Promise<string | null> {
