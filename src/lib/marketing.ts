@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * when the customer starts a provider-cost action such as registering a
  * phone number or running paid API usage.
  */
-export const START_LOGIN_HREF = "/login";
+export const START_LOGIN_HREF = "/#start-free";
 
 /** Tester promo CTA — auto-applies the TESTER coupon for $150 off first month. */
 export const START_LOGIN_HREF_TESTER = "/api/billing/checkout?promo=TESTER";

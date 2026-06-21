@@ -1,6 +1,7 @@
 ENV INFO.rtf
 ENV INFO.txt
 *.rtf
+*.log
 .env*
 node_modules
 .next

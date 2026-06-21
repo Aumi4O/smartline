@@ -21,10 +21,11 @@ async function LoginContent({ searchParams }: LoginPageProps) {
   return (
     <div className="w-full max-w-[360px]">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold text-black">SmartLine</h1>
+        <h1 className="text-2xl font-semibold text-black">Create or sign in</h1>
         <p className="mt-2 text-sm text-gray-500">
-          Sign in to manage your voice agents
+          Use Google or email. New SmartLine accounts are created automatically.
         </p>
+        <p className="mt-1 text-xs text-gray-400">No card needed.</p>
       </div>
 
       <div className="space-y-4">

@@ -2,9 +2,11 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const variants = {
-  primary: "bg-black text-white hover:bg-gray-800",
-  secondary: "border border-gray-200 bg-white text-black hover:bg-gray-50",
-  ghost: "bg-transparent text-black hover:underline",
+  primary:
+    "bg-black text-white shadow-[0_1px_2px_rgba(10,10,10,0.16)] hover:bg-gray-800 active:bg-black",
+  secondary:
+    "border border-gray-200 bg-white text-black shadow-[0_1px_2px_rgba(10,10,10,0.04)] hover:border-gray-300 hover:bg-gray-50",
+  ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-black",
 } as const;
 
 const sizes = {
@@ -14,7 +16,7 @@ const sizes = {
 } as const;
 
 const baseButtonClasses =
-  "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
+  "inline-flex items-center justify-center rounded-lg font-medium tracking-[-0.01em] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
 
 /**
  * Returns the same class string the <Button> component would render.

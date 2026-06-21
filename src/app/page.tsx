@@ -8,13 +8,11 @@ import {
 } from "@/lib/marketing";
 import { SUPPORT_EMAIL, mailto } from "@/lib/contact";
 import { HeroVideo } from "@/components/marketing/hero-video";
+import { RippleField } from "@/components/marketing/ripple-field";
 import { FreeRegistrationForm } from "@/components/marketing/free-registration-form";
 import { signInWithEmail, signInWithGoogle } from "@/app/(auth)/login/actions";
 
 const ACCENT = "#0066FF";
-const GUEST_CHECKOUT_HREF = "/api/billing/checkout";
-const checkoutHref = (tier: "starter" | "growth" | "scale") =>
-  `${GUEST_CHECKOUT_HREF}?tier=${tier}`;
 
 function Icon({
   children,
@@ -83,9 +81,9 @@ export default function HomePage() {
   const strawberryDemoUrl = getStrawberryVoiceDemoUrl();
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-black antialiased">
+    <div className="flex min-h-screen flex-col bg-cream text-black antialiased">
       {/* ============= HEADER ============= */}
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/85 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-cream/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
             <span
@@ -125,6 +123,12 @@ export default function HomePage() {
                 "radial-gradient(50% 60% at 50% 0%, rgba(0,102,255,0.08) 0%, rgba(0,102,255,0) 70%)",
             }}
           />
+          {/* Ambient voice-ripple field — concentric rings breathing behind the
+              headline, evoking sound emanating from a call. Decorative only. */}
+          <RippleField
+            count={18}
+            className="pointer-events-none absolute left-1/2 top-[-14%] aspect-square w-[min(1180px,150vw)] -translate-x-1/2 [mask-image:radial-gradient(closest-side,black_55%,transparent_100%)]"
+          />
           <div className="relative mx-auto max-w-[820px] text-center">
             <p
               className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium tracking-wide text-black"
@@ -147,188 +151,101 @@ export default function HomePage() {
               cost of a single receptionist.
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            {/* ONE dominant action. The demo is offered as a quieter proof
+                link beneath it — proof, not a second equal-weight sales CTA.
+                (Per Clarity finding: cold visitors need a single obvious next
+                step that feels tiny, plus one trust line right at the CTA.) */}
+            <div className="mt-9 flex flex-col items-center gap-4">
               <FreeRegistrationForm
                 googleAction={signInWithGoogle}
                 emailAction={signInWithEmail}
               />
-              <a href={hearHref} className={hearClass}>
-                Hear It Talk
+
+              <a
+                href={hearHref}
+                className="group inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 rounded-md"
+              >
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 text-black transition-colors group-hover:border-black"
+                  aria-hidden
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3 translate-x-[0.5px]">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+                Or hear it answer a call first — no sign-up
               </a>
             </div>
 
-            <p className="mt-3 text-sm text-gray-500">
-              Google or email. No card needed.
+            {/* One immediate trust line near the CTA. */}
+            <p className="mx-auto mt-4 max-w-[440px] text-sm text-gray-500">
+              Start with Google or email — no card. Build your first agent free;
+              you only pay when real calls run.
             </p>
 
-            <p className="mt-4 text-sm text-gray-500">
-              Register free. Choose a plan when you are ready: $49, $149, or $299/mo after a 7-day trial, with $4 usage credits to test real calls.
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400">
-              <span>Powered by OpenAI</span>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs font-medium text-gray-400">
+              <span className="uppercase tracking-wider text-gray-400">Built on</span>
+              <span className="text-gray-500">OpenAI</span>
               <span aria-hidden>·</span>
-              <span>Twilio</span>
+              <span className="text-gray-500">Twilio</span>
               <span aria-hidden>·</span>
-              <span>Enterprise-grade security</span>
+              <span className="text-gray-500">Enterprise-grade security</span>
               <span aria-hidden>·</span>
-              <span>GDPR + TCPA ready</span>
+              <span className="text-gray-500">GDPR + TCPA ready</span>
             </div>
 
             {/* Hero video — 9:16 portrait showreel rendered phone-mockup-sized.
                 Autoplays muted (browser policy); a tap on the pill toggles sound. */}
             <HeroVideo src="/smartline-hero.mp4" />
+          </div>
+        </section>
 
-            {/* SmartLine web demo from Lead Agent Studio */}
-            <div
-              id="strawberry-demo"
-              className="relative left-1/2 mt-12 w-[min(980px,calc(100vw-3rem))] -translate-x-1/2 text-left"
-            >
-              <div className="mb-5 text-center">
-                <p
-                  className="mb-3 text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: ACCENT }}
-                >
-                  Live agent demo
-                </p>
-                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Live challenge — test the agent now
-                </h2>
-                <p className="mx-auto mt-4 max-w-[620px] text-base leading-relaxed text-gray-600">
-                  The ready-to-use Lead Agents Studio SmartLine web widget is embedded here,
-                  directly under the video.
-                </p>
-              </div>
-
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
-                <iframe
-                  title="SmartLine live agent web demo"
-                  src={strawberryDemoUrl}
-                  className="h-[min(76vh,760px)] w-full border-0 bg-white"
-                  allow="microphone; autoplay; clipboard-write"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-
-              <p className="mt-4 text-center text-sm text-gray-500">
-                <a
-                  href={strawberryDemoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-black underline-offset-4 hover:underline"
-                >
-                  Open live agent demo in a new tab
-                </a>
+        {/* ============= TRY IT (live demo) =============
+            Pulled out of the hero into its own section: a mic-permission iframe
+            is the highest-friction "proof" possible, so it must not compete with
+            the single hero CTA. Cold visitors get one clear action up top; the
+            curious ones scroll to actually talk to the agent here. */}
+        <section
+          id="strawberry-demo"
+          className="scroll-mt-20 border-t border-gray-100 bg-canvas px-6 py-20 sm:py-24"
+        >
+          <div className="mx-auto max-w-[980px]">
+            <div className="mx-auto max-w-[640px] text-center">
+              <p
+                className="mb-3 text-xs font-semibold uppercase tracking-widest"
+                style={{ color: ACCENT }}
+              >
+                Try it
+              </p>
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                Talk to a live agent right now
+              </h2>
+              <p className="mx-auto mt-4 text-base leading-relaxed text-gray-600">
+                No sign-up, no card. Press start, allow your mic, and have a real
+                conversation — exactly what your callers would hear.
               </p>
             </div>
 
-            {/* Mini pricing strip — above the fold, shows the paid-plan ladder */}
-            <div className="mx-auto mt-12 grid max-w-[920px] gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
-              <a
-                href={checkoutHref("starter")}
-                className="group flex items-center justify-between gap-4 rounded-xl border-2 bg-white p-4 text-left transition-shadow hover:shadow-sm"
-                style={{ borderColor: ACCENT }}
-              >
-                <div>
-                  <p
-                    className="text-[10px] font-semibold uppercase tracking-widest"
-                    style={{ color: ACCENT }}
-                  >
-                    Starter
-                  </p>
-                  <p className="mt-1 text-xl font-semibold text-black">
-                    $49<span className="text-xs font-normal text-gray-400">/mo</span>
-                  </p>
-                  <p className="text-[11px] text-gray-500">1 call flow · $4 test credits</p>
-                </div>
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5"
-                  style={{ backgroundColor: ACCENT }}
-                  aria-hidden
-                >
-                  <svg viewBox="0 0 24 24" {...STROKE} className="h-4 w-4">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </span>
-              </a>
-
-              {/* Arrow */}
-              <div
-                className="hidden items-center justify-center text-gray-300 sm:flex"
-                aria-hidden
-              >
-                <svg viewBox="0 0 24 24" {...STROKE} className="h-4 w-4">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </div>
-
-              <a
-                href={checkoutHref("growth")}
-                className="flex items-center justify-between gap-4 rounded-xl bg-black p-4 text-left text-white transition-shadow hover:shadow-sm"
-              >
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                    Growth
-                  </p>
-                  <p className="mt-1 text-xl font-semibold">
-                    $149<span className="text-xs font-normal text-gray-400">/mo</span>
-                  </p>
-                  <p className="text-[11px] text-gray-400">Main plan · qualify and follow up</p>
-                </div>
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-700 text-gray-300"
-                  aria-hidden
-                >
-                  <svg viewBox="0 0 24 24" {...STROKE} className="h-4 w-4">
-                    <circle cx="12" cy="12" r="9" />
-                    <polyline points="12 7 12 12 15 14" />
-                  </svg>
-                </span>
-              </a>
-
-              {/* Plus */}
-              <div
-                className="hidden items-center justify-center text-gray-300 sm:flex"
-                aria-hidden
-              >
-                <svg viewBox="0 0 24 24" {...STROKE} className="h-4 w-4">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </div>
-
-              <a
-                href={checkoutHref("scale")}
-                className="group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
-              >
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                    Scale
-                  </p>
-                  <p className="mt-1 text-xl font-semibold text-black">
-                    $299<span className="text-xs font-normal text-gray-400">/mo</span>
-                  </p>
-                  <p className="text-[11px] text-gray-500">Higher volume · routing · analytics</p>
-                </div>
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-transform group-hover:translate-x-0.5"
-                  aria-hidden
-                >
-                  <svg viewBox="0 0 24 24" {...STROKE} className="h-4 w-4">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </span>
-              </a>
+            <div className="mt-12 overflow-hidden rounded-[28px] border border-gray-200 shadow-[0_30px_80px_rgba(26,25,21,0.14)] ring-1 ring-black/[0.02]">
+              <iframe
+                title="SmartLine live agent web demo"
+                src={strawberryDemoUrl}
+                className="h-[min(74vh,740px)] w-full border-0 bg-cream"
+                allow="microphone; autoplay; clipboard-write"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
 
-            <p className="mt-4 text-center text-[11px] text-gray-400">
-              No long trial. No contracts.
-              <span className="mx-1.5 text-gray-300" aria-hidden>·</span>
-              Cancel inside the 7-day window and you&apos;re never billed the monthly plan.
+            <p className="mt-4 text-center text-sm text-gray-500">
+              <a
+                href={strawberryDemoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-black underline-offset-4 hover:underline"
+              >
+                Open the demo in a new tab
+              </a>
             </p>
           </div>
         </section>
@@ -545,7 +462,7 @@ export default function HomePage() {
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {[
                 { n: "1", t: "Register and create your agent for free." },
-                { n: "2", t: "Load $15 only when paid usage starts." },
+                { n: "2", t: "Add usage credit only when real calls start." },
                 { n: "3", t: "Test it on your own real calls." },
                 { n: "4", t: "Keep it only if it earns its place." },
               ].map((item) => (
@@ -728,10 +645,10 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <a
-                  href={checkoutHref("starter")}
+                  href={START_LOGIN_HREF}
                   className={buttonClasses({ className: "mt-6 w-full" })}
                 >
-                  Start Starter
+                  Create free account
                 </a>
               </div>
 
@@ -770,13 +687,13 @@ export default function HomePage() {
                 </ul>
 
                 <a
-                  href={checkoutHref("growth")}
+                  href={START_LOGIN_HREF}
                   className={buttonClasses({
                     className:
                       "mt-6 w-full bg-white text-black hover:bg-gray-100",
                   })}
                 >
-                  Start Growth
+                  Create free account
                 </a>
                 <p className="mt-2 text-center text-xs text-gray-400">
                   7-day trial · cancel before billing starts
@@ -814,13 +731,13 @@ export default function HomePage() {
                   Usage credits still power provider costs. Add packs when your balance gets low.
                 </p>
                 <a
-                  href={checkoutHref("scale")}
+                  href={START_LOGIN_HREF}
                   className={buttonClasses({
                     className: "mt-6 w-full",
                     variant: "secondary",
                   })}
                 >
-                  Start Scale
+                  Create free account
                 </a>
               </div>
             </div>
@@ -904,7 +821,7 @@ export default function HomePage() {
                   <p className="mt-1 text-gray-600">Top up when you need to.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {["$25", "$50", "$100", "$250"].map((pack) => (
+                  {["$15", "$25", "$50", "$100", "$250"].map((pack) => (
                     <span
                       key={pack}
                       className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-black"
@@ -1236,7 +1153,7 @@ export default function HomePage() {
 
             <div className="mt-10 space-y-2 text-lg text-gray-600">
               <p>Create the account for free.</p>
-              <p>Load $15 only when you put real usage on the line.</p>
+              <p>Add usage credit only when you put real calls on the line.</p>
               <p>See how it handles your business.</p>
               <p>
                 <span className="font-medium text-black">Keep it because it works.</span>
@@ -1266,7 +1183,7 @@ export default function HomePage() {
       </main>
 
       {/* ============= FOOTER ============= */}
-      <footer className="border-t border-gray-200 bg-white px-6 py-10">
+      <footer className="border-t border-gray-200 bg-cream px-6 py-10">
         <div className="mx-auto max-w-[1200px]">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
             <div className="flex items-center gap-2">

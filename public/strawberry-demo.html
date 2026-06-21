@@ -4,53 +4,65 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SmartLine Live Agent Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         box-sizing: border-box;
       }
 
       :root {
+        /* Matches the SmartLine site: warm cream canvas, cool stage, one blue accent. */
         --accent: #0066ff;
-        --ink: #0d0d0d;
-        --muted: #6e6e80;
-        --line: #e5e5e6;
-        --soft: #f7f7f8;
+        --ink: #1a1915;
+        --muted: #76705f;
+        --line: #e4e0d6;
+        --soft: #f5f3ee;
+        --cream: #faf9f5;
+        --canvas: #f4f2ec;
+        --cool: #e7e8ee;
+        --cool-deep: #dcdde6;
+        --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
       }
 
       html,
       body {
         margin: 0;
         min-height: 100%;
-        background: #ffffff;
+        background: var(--cream);
         color: var(--ink);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-
-      body {
-        padding: 0;
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .demo-shell {
         display: grid;
         min-height: 100vh;
-        grid-template-columns: minmax(280px, 0.88fr) minmax(340px, 1.12fr);
-        background: #ffffff;
+        grid-template-columns: minmax(280px, 0.86fr) minmax(340px, 1.14fr);
+        background: var(--cream);
       }
 
+      /* ---- Left: editorial copy column on cream ---- */
       .demo-copy {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         gap: 32px;
         border-right: 1px solid var(--line);
-        padding: 36px;
+        padding: 44px 40px;
       }
 
       .eyebrow {
-        margin: 0 0 12px;
+        margin: 0 0 16px;
         color: var(--accent);
         font-size: 12px;
-        font-weight: 750;
+        font-weight: 650;
         letter-spacing: 0.16em;
         text-transform: uppercase;
       }
@@ -58,44 +70,48 @@
       h1 {
         margin: 0;
         max-width: 520px;
-        font-size: clamp(34px, 4vw, 58px);
-        line-height: 1.02;
-        letter-spacing: -0.01em;
+        font-family: var(--font-serif);
+        font-weight: 500;
+        font-size: clamp(32px, 3.6vw, 50px);
+        line-height: 1.06;
+        letter-spacing: -0.018em;
       }
 
       .intro {
         margin: 20px 0 0;
         max-width: 560px;
-        color: #4a4a5a;
-        font-size: 17px;
+        color: var(--muted);
+        font-size: 16px;
         line-height: 1.62;
       }
 
       .prompt-list {
         display: grid;
-        gap: 8px;
-        margin-top: 26px;
+        gap: 9px;
+        margin-top: 28px;
       }
 
       .prompt-chip {
         width: 100%;
         border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--soft);
+        border-radius: 12px;
+        background: #ffffff;
         color: var(--ink);
         cursor: pointer;
         font: inherit;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 550;
         line-height: 1.35;
-        padding: 12px 14px;
+        padding: 13px 15px;
         text-align: left;
-        transition: border-color 160ms ease, background 160ms ease;
+        box-shadow: 0 1px 2px rgba(26, 25, 21, 0.04);
+        transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
       }
 
       .prompt-chip:hover {
         border-color: var(--accent);
-        background: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 102, 255, 0.1);
       }
 
       .fine-print {
@@ -103,32 +119,91 @@
         color: var(--muted);
         font-size: 13px;
         line-height: 1.55;
+        opacity: 0.85;
       }
 
+      /* ---- Right: zen stage — warm-to-cool surface with a ripple field ---- */
       .demo-stage {
+        position: relative;
         display: flex;
         min-height: 620px;
-        align-items: stretch;
+        align-items: center;
         justify-content: center;
-        background: #07111f;
-        padding: 26px;
+        overflow: hidden;
+        background: linear-gradient(
+          125deg,
+          var(--cream) 0%,
+          var(--canvas) 42%,
+          var(--cool) 74%,
+          var(--cool-deep) 100%
+        );
+        padding: 40px 34px;
+      }
+
+      /* Concentric voice-ripples behind the panel (same motif as the hero). */
+      .stage-ripple {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 150%;
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        -webkit-mask-image: radial-gradient(closest-side, #000 60%, transparent 100%);
+        mask-image: radial-gradient(closest-side, #000 60%, transparent 100%);
+      }
+
+      .stage-ripple .ripple-breathe {
+        transform-origin: 0 0;
+        animation: ripple-breathe 7s ease-in-out infinite;
+        will-change: transform;
+      }
+
+      .stage-ripple .ripple-ring {
+        transform-origin: 0 0;
+        opacity: 0;
+        animation: ripple-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      @keyframes ripple-breathe {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.035);
+        }
+      }
+
+      @keyframes ripple-in {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
 
       .smartline-agent-widget {
+        position: relative;
+        z-index: 1;
         width: 100%;
-        max-width: 680px;
+        max-width: 660px;
       }
 
+      /* ---- Agent window: a floating white panel (suspended, zen) ---- */
       .agent-window {
         display: flex;
         height: 100%;
-        min-height: 568px;
+        min-height: 560px;
         overflow: hidden;
         flex-direction: column;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(26, 25, 21, 0.08);
+        border-radius: 24px;
+        background: #ffffff;
+        box-shadow: 0 30px 80px rgba(26, 25, 21, 0.16), 0 4px 14px rgba(26, 25, 21, 0.06);
       }
 
       .agent-window-header {
@@ -136,7 +211,7 @@
         align-items: center;
         gap: 14px;
         border-bottom: 1px solid var(--line);
-        padding: 18px;
+        padding: 20px 22px;
       }
 
       .agent-avatar {
@@ -144,10 +219,11 @@
         width: 44px;
         height: 44px;
         place-items: center;
-        border-radius: 12px;
+        border-radius: 14px;
         background: var(--accent);
         color: #ffffff;
-        font-weight: 800;
+        font-weight: 700;
+        letter-spacing: -0.01em;
       }
 
       .agent-avatar.talking {
@@ -157,8 +233,10 @@
       .agent-info h3 {
         margin: 0;
         color: var(--ink);
-        font-size: 18px;
+        font-size: 17px;
+        font-weight: 600;
         line-height: 1.2;
+        letter-spacing: -0.01em;
       }
 
       .agent-info span {
@@ -170,12 +248,12 @@
 
       .agent-waveform {
         display: flex;
-        min-height: 90px;
+        min-height: 92px;
         align-items: center;
         justify-content: center;
         gap: 7px;
         border-bottom: 1px solid var(--line);
-        background: #f8fbff;
+        background: linear-gradient(180deg, #fbfaf7 0%, #f6f8fe 100%);
       }
 
       .agent-waveform .bar {
@@ -183,7 +261,7 @@
         height: 22px;
         border-radius: 999px;
         background: var(--accent);
-        opacity: 0.72;
+        opacity: 0.66;
         transform-origin: center;
       }
 
@@ -208,7 +286,7 @@
         flex: 1;
         flex-direction: column;
         gap: 14px;
-        padding: 16px;
+        padding: 18px;
       }
 
       .agent-messages {
@@ -216,9 +294,9 @@
         flex: 1;
         overflow: auto;
         border: 1px solid var(--line);
-        border-radius: 14px;
-        background: #ffffff;
-        padding: 14px;
+        border-radius: 16px;
+        background: var(--cream);
+        padding: 16px;
       }
 
       .agent-msg {
@@ -229,8 +307,8 @@
       .agent-msg p {
         max-width: 82%;
         margin: 0;
-        border-radius: 13px;
-        padding: 10px 12px;
+        border-radius: 14px;
+        padding: 10px 13px;
         font-size: 14px;
         line-height: 1.5;
       }
@@ -245,15 +323,16 @@
       }
 
       .agent-msg-assistant p {
-        background: var(--soft);
+        background: #ffffff;
         color: var(--ink);
+        border: 1px solid var(--line);
       }
 
       .agent-mic-notice {
         display: none;
-        border: 1px solid #dbeafe;
-        border-radius: 10px;
-        background: #eff6ff;
+        border: 1px solid #dbe5ff;
+        border-radius: 12px;
+        background: #f0f5ff;
         color: #1d4ed8;
         padding: 10px 12px;
       }
@@ -277,12 +356,13 @@
 
       .sl-chat-input {
         min-width: 0;
-        height: 46px;
+        height: 48px;
         border: 1px solid var(--line);
-        border-radius: 9px;
+        border-radius: 12px;
+        background: #ffffff;
         color: var(--ink);
         font: inherit;
-        padding: 0 13px;
+        padding: 0 14px;
       }
 
       .sl-chat-input:focus {
@@ -301,27 +381,36 @@
       .btn-voice,
       .btn-stop {
         display: inline-flex;
-        min-height: 46px;
+        min-height: 48px;
         align-items: center;
         justify-content: center;
         gap: 8px;
         border: 0;
-        border-radius: 9px;
+        border-radius: 12px;
         cursor: pointer;
         font: inherit;
-        font-weight: 700;
-        padding: 0 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        padding: 0 16px;
+        transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
       }
 
       .btn-send,
       .btn-voice {
         background: var(--ink);
         color: #ffffff;
+        box-shadow: 0 2px 8px rgba(26, 25, 21, 0.16);
+      }
+
+      .btn-send:hover,
+      .btn-voice:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(26, 25, 21, 0.2);
       }
 
       .btn-stop {
-        background: #fee2e2;
-        color: #991b1b;
+        background: #fdecec;
+        color: #b42318;
       }
 
       .btn-icon {
@@ -341,7 +430,15 @@
       }
 
       .agent-status.error {
-        color: #b91c1c;
+        color: #b42318;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .stage-ripple .ripple-breathe,
+        .stage-ripple .ripple-ring {
+          animation: none !important;
+          opacity: 1;
+        }
       }
 
       @media (max-width: 840px) {
@@ -352,16 +449,16 @@
         .demo-copy {
           border-right: 0;
           border-bottom: 1px solid var(--line);
-          padding: 26px;
+          padding: 30px 26px;
         }
 
         .demo-stage {
-          min-height: 620px;
-          padding: 18px;
+          min-height: 600px;
+          padding: 26px 20px;
         }
 
         .agent-window {
-          min-height: 560px;
+          min-height: 548px;
         }
       }
     </style>
@@ -371,9 +468,9 @@
       <section class="demo-copy" aria-label="SmartLine live demo">
         <div>
           <p class="eyebrow">Live agent demo</p>
-          <h1>Live challenge — test the agent now</h1>
+          <h1>Talk to the agent before you sign up.</h1>
           <p class="intro">
-            Type or click Start Voice to talk. Ask what real buyers ask: price, timing,
+            Type or press Start Voice to talk. Ask what real buyers ask: price, timing,
             objections, languages, or human handoff.
           </p>
           <div class="prompt-list" aria-label="Demo prompts">
@@ -385,13 +482,25 @@
           </div>
         </div>
         <p class="fine-print">
-          This is the ready-to-use Lead Agents Studio SmartLine web widget connected to the live
-          SmartLine API.
+          The live SmartLine web agent, connected to the real SmartLine API.
         </p>
       </section>
 
       <section class="demo-stage" aria-label="SmartLine agent widget">
+        <svg
+          class="stage-ripple"
+          viewBox="0 0 600 600"
+          aria-hidden="true"
+          role="presentation"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <g transform="translate(300 300)">
+            <g class="ripple-breathe" id="stage-ripple-rings"></g>
+          </g>
+        </svg>
+
         <div
+          class="smartline-agent-widget"
           data-smartline-agent
           data-agent-name="SmartLine — Live Agent"
           data-agent-avatar="SL"
@@ -399,6 +508,33 @@
       </section>
     </main>
 
+    <script>
+      // Build the concentric ripple rings (kept in JS so the markup stays lean).
+      (function buildRipple() {
+        var g = document.getElementById("stage-ripple-rings");
+        if (!g) return;
+        var count = 18,
+          min = 10,
+          max = 288,
+          step = (max - min) / (count - 1),
+          ns = "http://www.w3.org/2000/svg";
+        for (var i = 0; i < count; i++) {
+          var c = document.createElementNS(ns, "circle");
+          c.setAttribute("cx", "0");
+          c.setAttribute("cy", "0");
+          c.setAttribute("r", String(min + i * step));
+          c.setAttribute("fill", "none");
+          c.setAttribute(
+            "stroke",
+            i % 6 === 5 ? "rgba(0,102,255,0.22)" : "rgba(0,102,255,0.10)"
+          );
+          c.setAttribute("stroke-width", i === 0 ? "1.4" : "0.9");
+          c.setAttribute("class", "ripple-ring");
+          c.style.animationDelay = i * 0.05 + "s";
+          g.appendChild(c);
+        }
+      })();
+    </script>
     <script src="/smartline-agent.js"></script>
     <script>
       document.querySelectorAll(".prompt-chip").forEach((button) => {

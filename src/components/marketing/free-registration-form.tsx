@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type AuthAction = (formData: FormData) => void | Promise<void>;
 
@@ -15,15 +15,40 @@ export function FreeRegistrationForm({
 }: FreeRegistrationFormProps) {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#start-free") setOpen(true);
+    };
+
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-black px-6 text-base font-medium text-white transition-colors hover:bg-gray-800 sm:w-auto"
-      >
-        Start free
-      </button>
+      <span id="start-free" className="inline-flex w-full scroll-mt-24 sm:w-auto">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="group inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-xl bg-black px-10 text-[17px] font-semibold tracking-[-0.01em] text-white shadow-[0_6px_20px_rgba(10,10,10,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-900 hover:shadow-[0_10px_28px_rgba(10,10,10,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:w-auto sm:min-w-[230px]"
+        >
+          Start free
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-0.5"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </span>
 
       {open && (
         <div

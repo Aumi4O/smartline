@@ -1,40 +1,132 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  /* Geist (self-hosted) carries body/UI; Source Serif 4 is the display face. */
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Claude/Anthropic-leaning warm canvas. White is reserved for cards so they
+     lift off the cream; neutrals are warm (taupe), not cool gray. */
   --color-white: #ffffff;
-  --color-black: #0d0d0d;
-  --color-gray-50: #f7f7f8;
-  --color-gray-100: #ececec;
-  --color-gray-200: #e5e5e6;
-  --color-gray-400: #ababba;
-  --color-gray-500: #6e6e80;
-  --color-gray-600: #4a4a5a;
-  --color-gray-800: #1a1a2e;
-  --color-gray-900: #0d0d0d;
+  --color-cream: #faf9f5;
+  --color-canvas: #f4f2ec;
+  --color-black: #1a1915;
+  --color-gray-50: #f5f3ee;
+  --color-gray-100: #ece9e1;
+  --color-gray-200: #e4e0d6;
+  --color-gray-300: #d6d1c4;
+  --color-gray-400: #a8a294;
+  --color-gray-500: #76705f; /* warm mid-gray, AA on cream */
+  --color-gray-600: #565044;
+  --color-gray-700: #403b32;
+  --color-gray-800: #2a2620;
+  --color-gray-900: #1a1915;
+
+  /* SmartLine blue — the single brand accent (kept; sits on warm cream). */
+  --color-accent: #0066ff;
+  --color-accent-strong: #0052cc;
 }
 
 @layer base {
   html {
     font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
 
   body {
-    font-family: var(--font-sans);
-    background-color: var(--color-white);
+    font-family: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
+    background-color: var(--color-cream);
     color: var(--color-black);
     line-height: 1.6;
+    letter-spacing: -0.005em;
+    font-feature-settings: "ss01", "cv01", "calt", "liga";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* Big editorial headlines in the serif; smaller headings stay in Geist. */
+  h1,
+  h2 {
+    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    letter-spacing: -0.018em;
+    line-height: 1.08;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: rgba(0, 102, 255, 0.16);
+    color: var(--color-black);
+  }
+
+  :focus-visible {
+    outline: none;
   }
 
   * {
     border-color: var(--color-gray-200);
+  }
+}
+
+/* ---- Ambient ripple field (hero) ----------------------------------------
+   Adapted from the zen sketch. Only transform/opacity animate. The breathing
+   group and the per-ring cascade both use transform-origin at the translated
+   center (0,0 in the group's local space). Disabled for reduced-motion. */
+.ripple-breathe {
+  transform-origin: 0 0;
+  animation-name: ripple-breathe;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.ripple-ring {
+  transform-origin: 0 0;
+  opacity: 0;
+  animation: ripple-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes ripple-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+@keyframes ripple-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ripple-breathe,
+  .ripple-ring {
+    animation: none !important;
+    opacity: 1;
   }
 }
